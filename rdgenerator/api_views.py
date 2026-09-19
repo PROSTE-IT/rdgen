@@ -19,7 +19,7 @@ PERMISSIONS_TYPE_CHOICES = ['custom', 'full', 'view']
 
 # Boolean fields
 BOOL_FIELDS = [
-    'delayFix', 'xOffline', 'hidecm', 'removeNewVersionNotif',
+    'delayFix', 'xOffline', 'hidecm', 'removeNewVersionNotif', 'supportAddressBook',
     'denyLan', 'enableDirectIP', 'autoClose',
     'enableKeyboard', 'enableClipboard', 'enableFileTransfer', 'enableAudio',
     'enableTCP', 'enableRemoteRestart', 'enableRecording', 'enableBlockingInput',
@@ -30,7 +30,7 @@ BOOL_FIELDS = [
 OPTIONAL_STR_FIELDS = [
     'sh_secret_field', 'serverIP', 'serverPort', 'key', 'apiServer', 'urlLink', 'downloadLink',
     'appname', 'compname', 'androidappid', 'permanentPassword',
-    'defaultManual', 'overrideManual',
+    'defaultManual', 'overrideManual', 'supportAddressBookUrl',
     'iconbase64', 'logobase64', 'privacybase64',
 ]
 
@@ -94,6 +94,14 @@ def validate_generate_params(data):
                 'Contains characters unsupported in build scripts '
                 '(& \\ | \' " $ `, newlines).'
             )
+
+    if cleaned.get('supportAddressBook'):
+        if cleaned.get('platform') != 'windows':
+            errors['platform'] = 'Shared address book requires Windows 64Bit.'
+        if cleaned.get('version') != '1.4.9':
+            errors['version'] = 'Shared address book requires RustDesk 1.4.9.'
+        if not cleaned.get('supportAddressBookUrl'):
+            errors['supportAddressBookUrl'] = 'This field is required when shared address book is enabled.'
 
     # File fields are not used in API mode (base64 fields are used instead)
     cleaned['iconfile'] = None

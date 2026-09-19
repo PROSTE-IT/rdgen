@@ -92,6 +92,30 @@ class GenerateForm(forms.Form):
     #custom added features
     xOffline = forms.BooleanField(initial=False, required=False)
     removeNewVersionNotif = forms.BooleanField(initial=False, required=False)
+    supportAddressBook = forms.BooleanField(initial=False, required=False)
+    supportAddressBookUrl = forms.URLField(
+        initial='https://rdbk-dev.prosteit.pl', required=False
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('supportAddressBook'):
+            if cleaned_data.get('platform') != 'windows':
+                self.add_error(
+                    'platform',
+                    'The shared address book is currently available only for Windows 64Bit.',
+                )
+            if cleaned_data.get('version') != '1.4.9':
+                self.add_error(
+                    'version',
+                    'The shared address book currently requires RustDesk 1.4.9.',
+                )
+            if not cleaned_data.get('supportAddressBookUrl'):
+                self.add_error(
+                    'supportAddressBookUrl',
+                    'Enter the shared address book API URL.',
+                )
+        return cleaned_data
 
     def clean_iconfile(self):
         print("checking icon")

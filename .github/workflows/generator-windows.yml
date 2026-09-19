@@ -116,7 +116,7 @@ jobs:
           echo "STATUS_URL=${{ env.apiServer }}/api/updategh" >> $env:GITHUB_ENV
 
       - name: Checkout source code
-        if: ${{ env.VERSION != 'master' }}
+        if: ${{ env.supportAddressBook != 'true' && env.VERSION != 'master' }}
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
@@ -124,10 +124,18 @@ jobs:
           submodules: recursive
 
       - name: Checkout source code
-        if: ${{ env.VERSION == 'master' }}
+        if: ${{ env.supportAddressBook != 'true' && env.VERSION == 'master' }}
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          submodules: recursive
+
+      - name: Checkout PROSTE IT support source code
+        if: ${{ env.supportAddressBook == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: PROSTE-IT/rustdesk
+          ref: feature/shared-address-book-client
           submodules: recursive
 
       - name: Restore bridge files

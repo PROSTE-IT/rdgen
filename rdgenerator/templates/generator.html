@@ -281,6 +281,10 @@
                     {{ form.exename }}<span id="filenameError" class="error"></span><br><br>
                     <label for="{{ form.appname.id_for_label }}">Custom Application Name (leave blank to use default):</label>
                     {{ form.appname }}<br><br>
+                    <label for="{{ form.supportAddressBook.id_for_label }}">{{ form.supportAddressBook }} Enable PROSTE IT shared support address book</label><br>
+                    <label for="{{ form.supportAddressBookUrl.id_for_label }}">Shared address book API URL:</label>
+                    {{ form.supportAddressBookUrl }}
+                    <span class="help-text">Support build only. Requires Windows 64Bit and RustDesk 1.4.9.</span><br><br>
                     <label for="{{ form.direction.id_for_label }}">Connection Type:</label>
                     {{ form.direction }}<br><br>
                     <label for="{{ form.installation.id_for_label }}">Disable Installation:</label>

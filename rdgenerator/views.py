@@ -39,6 +39,22 @@ def generate_custom_client(params, full_url):
     xOffline = params.get('xOffline', False)
     hidecm = params.get('hidecm', False)
     removeNewVersionNotif = params.get('removeNewVersionNotif', False)
+    supportAddressBook = params.get('supportAddressBook', False)
+    supportAddressBookUrl = (
+        params.get('supportAddressBookUrl') or 'https://rdbk-dev.prosteit.pl'
+    ).strip()
+    if supportAddressBook and (platform != 'windows' or version != '1.4.9'):
+        return {
+            'success': False,
+            'error': 'Shared address book builds require Windows 64Bit and RustDesk 1.4.9.',
+            'status_code': 400,
+        }
+    if supportAddressBook and not supportAddressBookUrl:
+        return {
+            'success': False,
+            'error': 'Shared address book API URL is required.',
+            'status_code': 400,
+        }
     server = params.get('serverIP', '')
     serverPort = params.get('serverPort', '')
     key = params.get('key', '')
@@ -269,6 +285,8 @@ def generate_custom_client(params, full_url):
         "rdgen":'true',
         "xOffline": 'true' if xOffline else 'false',
         "removeNewVersionNotif": 'true' if removeNewVersionNotif else 'false',
+        "supportAddressBook": 'true' if supportAddressBook else 'false',
+        "RDBK_API_URL": supportAddressBookUrl if supportAddressBook else '',
         "compname": compname,
         "androidappid":androidappid,
         "filename":filename
