@@ -41,7 +41,7 @@ def generate_custom_client(params, full_url):
     removeNewVersionNotif = params.get('removeNewVersionNotif', False)
     supportAddressBook = params.get('supportAddressBook', False)
     supportAddressBookUrl = (
-        params.get('supportAddressBookUrl') or 'https://rdbk-dev.prosteit.pl'
+        params.get('supportAddressBookUrl') or 'https://rdbk.prosteit.pl'
     ).strip()
     if supportAddressBook and (platform != 'windows' or version != '1.4.9'):
         return {

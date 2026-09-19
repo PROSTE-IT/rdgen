@@ -94,7 +94,7 @@ class GenerateForm(forms.Form):
     removeNewVersionNotif = forms.BooleanField(initial=False, required=False)
     supportAddressBook = forms.BooleanField(initial=False, required=False)
     supportAddressBookUrl = forms.URLField(
-        initial='https://rdbk-dev.prosteit.pl', required=False
+        initial='https://rdbk.prosteit.pl', required=False
     )
 
     def clean(self):

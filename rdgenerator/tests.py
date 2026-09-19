@@ -19,7 +19,7 @@ class SupportAddressBookValidationTests(SimpleTestCase):
             'permissionsDorO': 'default',
             'permissionsType': 'custom',
             'supportAddressBook': True,
-            'supportAddressBookUrl': 'https://rdbk-dev.prosteit.pl',
+            'supportAddressBookUrl': 'https://rdbk.prosteit.pl',
         }
         data.update(overrides)
         return data
