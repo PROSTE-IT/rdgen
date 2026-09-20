@@ -186,6 +186,10 @@ def api_status(request):
         "status": result['status'],
         "uuid": uuid_val,
         "log_url": result['github_log_url'],
+        "progress_percent": result.get('progress_percent'),
+        "current_stage": result.get('current_stage'),
+        "completed_steps": result.get('completed_steps'),
+        "total_steps": result.get('total_steps'),
     }
     if filename:
         response_data['filename'] = filename
@@ -221,6 +225,10 @@ def api_builds(request):
             'completed_at': completed_at,
             'github_log_url': result.get('github_log_url'),
             'artifacts': artifacts,
+            'progress_percent': result.get('progress_percent'),
+            'current_stage': result.get('current_stage'),
+            'completed_steps': result.get('completed_steps'),
+            'total_steps': result.get('total_steps'),
         })
 
     for build_uuid, file_build in file_builds.items():

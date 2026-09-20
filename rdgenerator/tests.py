@@ -1,6 +1,7 @@
 import tempfile
 import uuid
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, SimpleTestCase, TestCase, override_settings
@@ -8,7 +9,7 @@ from django.test import Client, SimpleTestCase, TestCase, override_settings
 from .api_views import validate_generate_params
 from .forms import GenerateForm
 from .models import GithubRun
-from .views import use_self_hosted_runner
+from .views import _get_run_status, use_self_hosted_runner
 
 
 class SupportAddressBookValidationTests(SimpleTestCase):
@@ -124,6 +125,44 @@ class BuildArtifactAPITests(TestCase):
         )
         self.assertEqual(build['status'], 'artifact_missing')
         self.assertEqual(build['artifacts'], [])
+
+    @patch('rdgenerator.views.requests.get')
+    def test_active_run_exposes_approximate_step_progress(self, request_get):
+        active_uuid = str(uuid.uuid4())
+        GithubRun.objects.create(
+            id=124,
+            uuid=active_uuid,
+            status='in_progress',
+            github_run_id=789,
+        )
+        run_response = Mock(status_code=200)
+        run_response.json.return_value = {
+            'status': 'in_progress',
+            'conclusion': None,
+        }
+        jobs_response = Mock(status_code=200)
+        jobs_response.json.return_value = {
+            'jobs': [
+                {
+                    'name': 'build',
+                    'status': 'in_progress',
+                    'steps': [
+                        {'name': 'Checkout', 'status': 'completed'},
+                        {'name': 'Compile RustDesk', 'status': 'in_progress'},
+                        {'name': 'Package', 'status': 'queued'},
+                    ],
+                }
+            ]
+        }
+        request_get.side_effect = [run_response, jobs_response]
+
+        result = _get_run_status(active_uuid)
+
+        self.assertEqual(result['current_stage'], 'Compile RustDesk')
+        self.assertEqual(result['completed_steps'], 1)
+        self.assertEqual(result['total_steps'], 3)
+        self.assertGreater(result['progress_percent'], 5)
+        self.assertLess(result['progress_percent'], 95)
 
     def test_artifact_download_is_streamed_and_requires_token(self):
         url = (

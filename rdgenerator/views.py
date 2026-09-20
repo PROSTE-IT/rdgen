@@ -519,7 +519,8 @@ def _get_run_status(uuid_val):
 
     github_log_url = f"https://github.com/{_settings.GHUSER}/{_settings.REPONAME}/actions/runs/{gh_run.github_run_id}"
 
-    if gh_run.status not in ['success', 'failure', 'cancelled', 'timed_out', 'skipped']:
+    progress = {}
+    if gh_run.status not in ['success', 'failure', 'cancelled', 'timed_out', 'skipped', 'action_required']:
         headers = {
             "Authorization": f"Bearer {_settings.GHBEARER}",
             "Accept": "application/vnd.github+json"
@@ -527,21 +528,79 @@ def _get_run_status(uuid_val):
         api_url = f"https://api.github.com/repos/{_settings.GHUSER}/{_settings.REPONAME}/actions/runs/{gh_run.github_run_id}"
         
         try:
-            gh_response = requests.get(api_url, headers=headers)
+            gh_response = requests.get(api_url, headers=headers, timeout=10)
             if gh_response.status_code == 200:
                 gh_data = gh_response.json()
                 
                 if gh_data['status'] == 'completed':
                     gh_run.status = gh_data['conclusion']
                     gh_run.save()
+                else:
+                    progress = _get_run_progress(gh_run.github_run_id, headers)
         except Exception as e:
             print(f"Error checking GitHub: {e}")
 
-    return {
+    result = {
         "found": True,
         "status": gh_run.status,
         "github_log_url": github_log_url,
         "gh_run": gh_run
+    }
+    result.update(progress)
+    return result
+
+
+def _get_run_progress(github_run_id, headers):
+    """Return approximate step progress for one active GitHub Actions run."""
+    fallback = {
+        "progress_percent": 5,
+        "current_stage": "Oczekiwanie na runner GitHub Actions",
+        "completed_steps": 0,
+        "total_steps": 0,
+    }
+    if not github_run_id:
+        return fallback
+
+    jobs_url = (
+        f"https://api.github.com/repos/{_settings.GHUSER}/"
+        f"{_settings.REPONAME}/actions/runs/{github_run_id}/jobs?per_page=100"
+    )
+    try:
+        response = requests.get(jobs_url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            return fallback
+        jobs = response.json().get("jobs") or []
+    except (requests.RequestException, ValueError, AttributeError):
+        return fallback
+
+    steps = []
+    current_stage = ""
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        job_steps = job.get("steps") or []
+        for step in job_steps:
+            if not isinstance(step, dict):
+                continue
+            steps.append(step)
+            if not current_stage and step.get("status") == "in_progress":
+                current_stage = str(step.get("name") or job.get("name") or "Kompilowanie")
+        if not current_stage and job.get("status") == "in_progress":
+            current_stage = str(job.get("name") or "Kompilowanie")
+
+    total_steps = len(steps)
+    completed_steps = sum(step.get("status") == "completed" for step in steps)
+    if total_steps:
+        progress_percent = 5 + round((completed_steps / total_steps) * 90)
+        progress_percent = max(5, min(95, progress_percent))
+    else:
+        progress_percent = 5
+
+    return {
+        "progress_percent": progress_percent,
+        "current_stage": current_stage or fallback["current_stage"],
+        "completed_steps": completed_steps,
+        "total_steps": total_steps,
     }
 
 
