@@ -9,7 +9,11 @@ from django.test import Client, SimpleTestCase, TestCase, override_settings
 from .api_views import validate_generate_params
 from .forms import GenerateForm
 from .models import GithubRun
-from .views import _get_run_status, use_self_hosted_runner
+from .views import (
+    _get_run_status,
+    remove_new_version_notification,
+    use_self_hosted_runner,
+)
 
 
 class SupportAddressBookValidationTests(SimpleTestCase):
@@ -49,6 +53,22 @@ class SupportAddressBookValidationTests(SimpleTestCase):
     def test_api_rejects_unsupported_platform(self):
         _, errors = validate_generate_params(self.form_data(platform='linux'))
         self.assertIn('platform', errors)
+
+    def test_support_build_always_removes_upstream_update_notification(self):
+        self.assertTrue(remove_new_version_notification({
+            'supportAddressBook': True,
+            'removeNewVersionNotif': False,
+        }))
+
+    def test_regular_build_keeps_explicit_update_notification_setting(self):
+        self.assertFalse(remove_new_version_notification({
+            'supportAddressBook': False,
+            'removeNewVersionNotif': False,
+        }))
+        self.assertTrue(remove_new_version_notification({
+            'supportAddressBook': False,
+            'removeNewVersionNotif': True,
+        }))
 
 
 class SelfHostedRunnerSelectionTests(SimpleTestCase):

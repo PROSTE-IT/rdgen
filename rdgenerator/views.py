@@ -157,6 +157,14 @@ def use_self_hosted_runner(user_secret):
     )
 
 
+def remove_new_version_notification(params):
+    """Support builds never show the upstream RustDesk update prompt."""
+    return bool(
+        params.get('supportAddressBook')
+        or params.get('removeNewVersionNotif', False)
+    )
+
+
 def generate_custom_client(params, full_url):
     """
     Core generation logic shared by web form and JSON API.
@@ -176,8 +184,8 @@ def generate_custom_client(params, full_url):
     delayFix = params.get('delayFix', True)
     xOffline = params.get('xOffline', False)
     hidecm = params.get('hidecm', False)
-    removeNewVersionNotif = params.get('removeNewVersionNotif', False)
     supportAddressBook = params.get('supportAddressBook', False)
+    removeNewVersionNotif = remove_new_version_notification(params)
     supportAddressBookUrl = (
         params.get('supportAddressBookUrl') or 'https://rdbk.prosteit.pl'
     ).strip()
