@@ -16,6 +16,7 @@ services:
       SH_SECRET: ""
       DATABASE_PATH: "/opt/rdgen/data/db.sqlite3"
       EXE_ROOT: "/opt/rdgen/exe"
+      EXE_TRASH_ROOT: "/opt/rdgen/artifact_trash"
       RDGEN_DASHBOARD_TOKEN: "${RDGEN_DASHBOARD_TOKEN}"
       RDGEN_UPLOAD_TOKEN: "${RDGEN_UPLOAD_TOKEN}"
       RDBK_DOWNLOAD_CENTER_URL: "https://rdbk-admin.prosteit.pl/admin/downloads/"
@@ -27,6 +28,7 @@ services:
       - ./exe:/opt/rdgen/exe
       - ./png:/opt/rdgen/png
       - ./temp_zips:/opt/rdgen/temp_zips
+      - ./artifact_trash:/opt/rdgen/artifact_trash
       - rdgen_data:/opt/rdgen/data
 
 volumes:

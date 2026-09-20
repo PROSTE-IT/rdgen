@@ -103,6 +103,7 @@ DATABASES = {
 # Completed artifacts live on a persistent Docker volume in production. Keeping
 # this configurable also lets tests use an isolated temporary directory.
 EXE_ROOT = Path(os.environ.get('EXE_ROOT', BASE_DIR / 'exe'))
+EXE_TRASH_ROOT = Path(os.environ.get('EXE_TRASH_ROOT', BASE_DIR / 'artifact_trash'))
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

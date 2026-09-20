@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 
 from .api_views import validate_generate_params
 from .forms import GenerateForm
@@ -72,7 +72,11 @@ class SelfHostedRunnerSelectionTests(SimpleTestCase):
 class BuildArtifactAPITests(TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.override = override_settings(EXE_ROOT=Path(self.temp_dir.name))
+        self.trash_dir = Path(self.temp_dir.name) / 'trash'
+        self.override = override_settings(
+            EXE_ROOT=Path(self.temp_dir.name),
+            EXE_TRASH_ROOT=self.trash_dir,
+        )
         self.override.enable()
         self.build_uuid = str(uuid.uuid4())
         self.build_dir = Path(self.temp_dir.name) / self.build_uuid
@@ -131,6 +135,23 @@ class BuildArtifactAPITests(TestCase):
         response = self.client.get(url, **self.auth())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(b''.join(response.streaming_content), b'EXE')
+
+    def test_artifact_delete_moves_file_to_recoverable_trash(self):
+        url = (
+            f'/api/builds/{self.build_uuid}/artifacts/'
+            'proste_IT_Support.exe'
+        )
+        self.assertEqual(self.client.delete(url).status_code, 403)
+
+        csrf_client = Client(enforce_csrf_checks=True)
+        response = csrf_client.delete(url, **self.auth())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['recoverable'])
+        self.assertFalse((self.build_dir / 'proste_IT_Support.exe').exists())
+        trashed = list((self.trash_dir / self.build_uuid).iterdir())
+        self.assertEqual(len(trashed), 1)
+        self.assertTrue(trashed[0].name.endswith('-proste_IT_Support.exe'))
 
     def test_legacy_download_rejects_path_traversal(self):
         response = self.client.get(

@@ -4,3 +4,4 @@ gunicorn.conf
 .venv
 rustdesk/
 rdbk/
+artifact_trash/

@@ -9,6 +9,7 @@ from .views import (
     _artifact_path,
     _available_builds,
     _get_run_status,
+    _trash_artifact,
     dashboard_token_required,
     generate_custom_client,
 )
@@ -242,8 +243,19 @@ def api_builds(request):
     return JsonResponse({'builds': builds[:100]})
 
 
+@csrf_exempt
 @dashboard_token_required
 def api_build_artifact(request, build_uuid, filename):
+    if request.method == 'DELETE':
+        destination = _trash_artifact(build_uuid, filename)
+        return JsonResponse({
+            'deleted': True,
+            'uuid': str(build_uuid),
+            'filename': filename,
+            'recoverable': True,
+            'trash_name': destination.name,
+        })
+
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed."}, status=405)
 

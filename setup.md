@@ -35,7 +35,11 @@
   * REPONAME="rdgen" *optional - defaults to "rdgen", change this if you renamed the repo when you forked it
   * RDGEN_UPLOAD_TOKEN="the same value as the GitHub Actions secret"
   * RDGEN_DASHBOARD_TOKEN="a different long random token shared only with RDBK"
-5. Now just run ```docker compose up -d```
+5. Create the persistent, recoverable artifact trash and make it writable by
+   the container user: `mkdir -p artifact_trash && chown 1000:1000 artifact_trash`.
+   Keep the `./artifact_trash:/opt/rdgen/artifact_trash` bind mount from the
+   example Compose file and include this directory in host backups.
+6. Now just run ```docker compose up -d```
 
 
 ## Use a self hosted github runner for faster client generation (Windows only right now)

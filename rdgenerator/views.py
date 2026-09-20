@@ -85,6 +85,21 @@ def _artifact_path(uuid_value, filename, require_exists=True):
     return file_path
 
 
+def _trash_artifact(uuid_value, filename):
+    build_uuid = _canonical_build_uuid(uuid_value)
+    safe_name = _safe_artifact_name(filename)
+    source = _artifact_path(build_uuid, safe_name)
+    trash_root = Path(_settings.EXE_TRASH_ROOT).resolve()
+    trash_dir = (trash_root / build_uuid).resolve()
+    if trash_root not in trash_dir.parents:
+        raise Http404("File not found")
+    trash_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(datetime_timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    destination = trash_dir / f'{timestamp}-{secrets.token_hex(4)}-{safe_name}'
+    os.replace(source, destination)
+    return destination
+
+
 def _available_builds():
     root = Path(_settings.EXE_ROOT)
     if not root.exists():
