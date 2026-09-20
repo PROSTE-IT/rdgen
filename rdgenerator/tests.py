@@ -1,7 +1,8 @@
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from .api_views import validate_generate_params
 from .forms import GenerateForm
+from .views import use_self_hosted_runner
 
 
 class SupportAddressBookValidationTests(SimpleTestCase):
@@ -41,3 +42,18 @@ class SupportAddressBookValidationTests(SimpleTestCase):
     def test_api_rejects_unsupported_platform(self):
         _, errors = validate_generate_params(self.form_data(platform='linux'))
         self.assertIn('platform', errors)
+
+
+class SelfHostedRunnerSelectionTests(SimpleTestCase):
+    @override_settings(SH_SECRET='')
+    def test_empty_configured_and_submitted_secrets_use_github_runner(self):
+        self.assertFalse(use_self_hosted_runner(''))
+
+    @override_settings(SH_SECRET='runner-secret')
+    def test_non_empty_matching_secret_uses_self_hosted_runner(self):
+        self.assertTrue(use_self_hosted_runner('runner-secret'))
+
+    @override_settings(SH_SECRET='runner-secret')
+    def test_missing_or_wrong_secret_uses_github_runner(self):
+        self.assertFalse(use_self_hosted_runner(''))
+        self.assertFalse(use_self_hosted_runner('wrong-secret'))

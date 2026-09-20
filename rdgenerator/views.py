@@ -19,6 +19,16 @@ from PIL import Image
 from urllib.parse import quote
 
 
+def use_self_hosted_runner(user_secret):
+    """Enable self-hosted builds only for an explicit, non-empty secret."""
+    configured_secret = str(_settings.SH_SECRET or "")
+    provided_secret = str(user_secret or "")
+    return bool(configured_secret and provided_secret) and secrets.compare_digest(
+        configured_secret,
+        provided_secret,
+    )
+
+
 def generate_custom_client(params, full_url):
     """
     Core generation logic shared by web form and JSON API.
@@ -32,7 +42,7 @@ def generate_custom_client(params, full_url):
         On failure: includes 'error' and optionally 'status_code'.
     """
     user_secret = params.get('sh_secret_field', '')
-    selfhosted = (_settings.SH_SECRET == user_secret)
+    selfhosted = use_self_hosted_runner(user_secret)
     platform = params.get('platform', 'windows')
     version = params.get('version', '1.4.9')
     delayFix = params.get('delayFix', True)
