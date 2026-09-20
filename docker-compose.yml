@@ -18,7 +18,7 @@ services:
       EXE_ROOT: "/opt/rdgen/exe"
       RDGEN_DASHBOARD_TOKEN: "${RDGEN_DASHBOARD_TOKEN}"
       RDGEN_UPLOAD_TOKEN: "${RDGEN_UPLOAD_TOKEN}"
-      RDBK_DOWNLOAD_CENTER_URL: "https://rdbk.prosteit.pl/admin/downloads/"
+      RDBK_DOWNLOAD_CENTER_URL: "https://rdbk-admin.prosteit.pl/admin/downloads/"
     ports:
       - "8000:8000"
     dns:

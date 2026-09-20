@@ -33,7 +33,7 @@ RDGEN_DASHBOARD_TOKEN = os.environ.get('RDGEN_DASHBOARD_TOKEN', '')
 RDGEN_UPLOAD_TOKEN = os.environ.get('RDGEN_UPLOAD_TOKEN', '')
 RDBK_DOWNLOAD_CENTER_URL = os.environ.get(
     'RDBK_DOWNLOAD_CENTER_URL',
-    'https://rdbk.prosteit.pl/admin/downloads/',
+    'https://rdbk-admin.prosteit.pl/admin/downloads/',
 )
 
 MEDIA_URL = '/media/'
