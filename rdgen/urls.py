@@ -15,6 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 import django
+from django.urls import path
 
 from rdgenerator import views as views
 from rdgenerator import api_views as api_views
@@ -38,4 +39,10 @@ urlpatterns = [
     # JSON API endpoints
     url(r'^api/generate$',api_views.api_generate),
     url(r'^api/status$',api_views.api_status),
+    path('api/builds', api_views.api_builds, name='api-builds'),
+    path(
+        'api/builds/<uuid:build_uuid>/artifacts/<str:filename>',
+        api_views.api_build_artifact,
+        name='api-build-artifact',
+    ),
 ]

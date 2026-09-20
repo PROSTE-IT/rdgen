@@ -23,6 +23,9 @@
    * Now click New repository secret again
    * Set the Name to ZIP_PASSWORD
    * Set the Secret to any password you want (use this in the next step as well) - generate a password by running: ```python3 -c 'import secrets; print(secrets.token_hex(100))'```
+   * Add `RDGEN_UPLOAD_TOKEN` as a separate long random secret. Configure the
+     same value in the RDGen container environment; it authenticates artifact
+     uploads from GitHub Actions.
 4. Now download the docker-compose.yml file and fill in the environment variables:
   * SECRET_KEY="your secret key" - generate a secret key by running: ```python3 -c 'import secrets; print(secrets.token_hex(100))'```
   * GHUSER="your github username"  
@@ -30,6 +33,8 @@
   * ZIP_PASSWORD="the same password that you entered as a github secret"
   * PROTOCOL="https" *optional - defaults to "https", change to "http" if you need to
   * REPONAME="rdgen" *optional - defaults to "rdgen", change this if you renamed the repo when you forked it
+  * RDGEN_UPLOAD_TOKEN="the same value as the GitHub Actions secret"
+  * RDGEN_DASHBOARD_TOKEN="a different long random token shared only with RDBK"
 5. Now just run ```docker compose up -d```
 
 

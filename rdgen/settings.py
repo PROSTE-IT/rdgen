@@ -29,6 +29,12 @@ ZIP_PASSWORD = os.environ.get("ZIP_PASSWORD",'insecure')
 PROTOCOL = os.environ.get("PROTOCOL", 'https')
 REPONAME = os.environ.get("REPONAME", 'rdgen')
 SH_SECRET = os.environ.get('SH_SECRET', 'secret')
+RDGEN_DASHBOARD_TOKEN = os.environ.get('RDGEN_DASHBOARD_TOKEN', '')
+RDGEN_UPLOAD_TOKEN = os.environ.get('RDGEN_UPLOAD_TOKEN', '')
+RDBK_DOWNLOAD_CENTER_URL = os.environ.get(
+    'RDBK_DOWNLOAD_CENTER_URL',
+    'https://rdbk.prosteit.pl/admin/downloads/',
+)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -57,7 +63,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -90,10 +96,13 @@ WSGI_APPLICATION = 'rdgen.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.environ.get('DATABASE_PATH', BASE_DIR / 'db.sqlite3'),
     }
 }
 
+# Completed artifacts live on a persistent Docker volume in production. Keeping
+# this configurable also lets tests use an isolated temporary directory.
+EXE_ROOT = Path(os.environ.get('EXE_ROOT', BASE_DIR / 'exe'))
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

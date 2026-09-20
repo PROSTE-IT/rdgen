@@ -14,6 +14,11 @@ services:
       PROTOCOL: "https"
       REPONAME: "rdgen"
       SH_SECRET: ""
+      DATABASE_PATH: "/opt/rdgen/data/db.sqlite3"
+      EXE_ROOT: "/opt/rdgen/exe"
+      RDGEN_DASHBOARD_TOKEN: "${RDGEN_DASHBOARD_TOKEN}"
+      RDGEN_UPLOAD_TOKEN: "${RDGEN_UPLOAD_TOKEN}"
+      RDBK_DOWNLOAD_CENTER_URL: "https://rdbk.prosteit.pl/admin/downloads/"
     ports:
       - "8000:8000"
     dns:
@@ -22,3 +27,7 @@ services:
       - ./exe:/opt/rdgen/exe
       - ./png:/opt/rdgen/png
       - ./temp_zips:/opt/rdgen/temp_zips
+      - rdgen_data:/opt/rdgen/data
+
+volumes:
+  rdgen_data:

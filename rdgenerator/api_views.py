@@ -1,8 +1,17 @@
 import json
+import mimetypes
 import re
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.conf import settings as _settings
-from .views import generate_custom_client, _get_run_status
+from django.views.decorators.csrf import csrf_exempt
+from .models import GithubRun
+from .views import (
+    _artifact_path,
+    _available_builds,
+    _get_run_status,
+    dashboard_token_required,
+    generate_custom_client,
+)
 
 
 # Field validation constraints (mirrored from GenerateForm)
@@ -111,6 +120,7 @@ def validate_generate_params(data):
     return cleaned, errors
 
 
+@csrf_exempt
 def api_generate(request):
     """
     POST /api/generate
@@ -182,3 +192,64 @@ def api_status(request):
         response_data['platform'] = platform
 
     return JsonResponse(response_data)
+
+
+@dashboard_token_required
+def api_builds(request):
+    if request.method != 'GET':
+        return JsonResponse({"error": "Method not allowed."}, status=405)
+
+    file_builds = {build['uuid']: build for build in _available_builds()}
+    builds = []
+
+    for run in GithubRun.objects.order_by('-created_at')[:100]:
+        result = _get_run_status(run.uuid)
+        status_value = result.get('status', run.status)
+        file_build = file_builds.pop(run.uuid, None)
+        artifacts = file_build['artifacts'] if file_build else []
+        completed_at = file_build['created_at'].isoformat() if file_build else None
+        builds.append({
+            'uuid': run.uuid,
+            'product': 'RustDesk',
+            'filename': run.filename,
+            'platform': run.platform,
+            'status': status_value,
+            'created_at': run.created_at.isoformat(),
+            'completed_at': completed_at,
+            'github_log_url': result.get('github_log_url'),
+            'artifacts': artifacts,
+        })
+
+    for build_uuid, file_build in file_builds.items():
+        builds.append({
+            'uuid': build_uuid,
+            'product': 'RustDesk',
+            'filename': '',
+            'platform': '',
+            'status': 'success',
+            'created_at': file_build['created_at'].isoformat(),
+            'completed_at': file_build['created_at'].isoformat(),
+            'github_log_url': None,
+            'artifacts': file_build['artifacts'],
+        })
+
+    builds.sort(
+        key=lambda build: build.get('created_at') or '',
+        reverse=True,
+    )
+    return JsonResponse({'builds': builds[:100]})
+
+
+@dashboard_token_required
+def api_build_artifact(request, build_uuid, filename):
+    if request.method != 'GET':
+        return JsonResponse({"error": "Method not allowed."}, status=405)
+
+    file_path = _artifact_path(build_uuid, filename)
+    content_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+    return FileResponse(
+        file_path.open('rb'),
+        as_attachment=True,
+        filename=filename,
+        content_type=content_type,
+    )

@@ -1,8 +1,12 @@
 import io
+import mimetypes
+from functools import wraps
 from pathlib import Path
-from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
+from datetime import datetime, timezone as datetime_timezone
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404
 from django.core.files.base import ContentFile
+from django.views.decorators.csrf import csrf_exempt
 import os
 import secrets
 import re
@@ -17,6 +21,115 @@ from .forms import GenerateForm
 from .models import GithubRun
 from PIL import Image
 from urllib.parse import quote
+
+
+ARTIFACT_SUFFIXES = {
+    '.exe', '.msi', '.apk', '.deb', '.rpm', '.zst', '.appimage', '.flatpak', '.dmg'
+}
+
+
+def bearer_token_required(setting_name):
+    def decorator(view):
+        @wraps(view)
+        def wrapped(request, *args, **kwargs):
+            configured = str(getattr(_settings, setting_name, '') or '')
+            authorization = request.headers.get('Authorization', '')
+            scheme, separator, provided = authorization.partition(' ')
+            valid = (
+                bool(configured)
+                and bool(separator)
+                and scheme.lower() == 'bearer'
+                and secrets.compare_digest(configured, provided)
+            )
+            if not valid:
+                return HttpResponseForbidden('Forbidden')
+            return view(request, *args, **kwargs)
+
+        return wrapped
+
+    return decorator
+
+
+dashboard_token_required = bearer_token_required('RDGEN_DASHBOARD_TOKEN')
+upload_token_required = bearer_token_required('RDGEN_UPLOAD_TOKEN')
+
+
+def _canonical_build_uuid(value):
+    try:
+        return str(uuid.UUID(str(value)))
+    except (ValueError, TypeError, AttributeError):
+        raise Http404("Build not found")
+
+
+def _safe_artifact_name(value):
+    name = str(value or '')
+    if (
+        not name
+        or Path(name).name != name
+        or Path(name).suffix.lower() not in ARTIFACT_SUFFIXES
+    ):
+        raise Http404("File not found")
+    return name
+
+
+def _artifact_path(uuid_value, filename, require_exists=True):
+    build_uuid = _canonical_build_uuid(uuid_value)
+    safe_name = _safe_artifact_name(filename)
+    root = Path(_settings.EXE_ROOT).resolve()
+    build_dir = (root / build_uuid).resolve()
+    file_path = (build_dir / safe_name).resolve()
+    if file_path.parent != build_dir or root not in build_dir.parents:
+        raise Http404("File not found")
+    if require_exists and (not file_path.is_file() or file_path.is_symlink()):
+        raise Http404("File not found")
+    return file_path
+
+
+def _available_builds():
+    root = Path(_settings.EXE_ROOT)
+    if not root.exists():
+        return []
+
+    builds = []
+    for build_dir in root.iterdir():
+        if not build_dir.is_dir() or build_dir.is_symlink():
+            continue
+        try:
+            build_uuid = _canonical_build_uuid(build_dir.name)
+        except Http404:
+            continue
+
+        artifacts = []
+        newest_timestamp = 0
+        for candidate in build_dir.iterdir():
+            if not candidate.is_file() or candidate.is_symlink():
+                continue
+            try:
+                safe_name = _safe_artifact_name(candidate.name)
+                safe_path = _artifact_path(build_uuid, safe_name)
+            except Http404:
+                continue
+            stat = safe_path.stat()
+            newest_timestamp = max(newest_timestamp, stat.st_mtime)
+            artifacts.append({
+                'name': safe_name,
+                'size': stat.st_size,
+            })
+
+        if artifacts:
+            artifacts.sort(key=lambda artifact: artifact['name'].lower())
+            builds.append({
+                'uuid': build_uuid,
+                'created_at': datetime.fromtimestamp(
+                    newest_timestamp,
+                    tz=datetime_timezone.utc,
+                ),
+                'artifacts': artifacts,
+                'timestamp': newest_timestamp,
+            })
+
+    builds.sort(key=lambda build: build['timestamp'], reverse=True)
+    return builds[:100]
 
 
 def use_self_hosted_runner(user_secret):
@@ -339,7 +452,9 @@ def generate_custom_client(params, full_url):
     }
     new_github_run = GithubRun(
         uuid=myuuid,
-        status="Starting generator...please wait"
+        status="Starting generator...please wait",
+        filename=filename,
+        platform=platform,
     )
     try:
         response = requests.post(url, json=data, headers=headers)
@@ -455,7 +570,8 @@ def check_for_file(request):
         return render(request, 'generated.html', {
             'filename': filename, 
             'uuid': uuid, 
-            'platform': platform
+            'platform': platform,
+            'download_center_url': _settings.RDBK_DOWNLOAD_CENTER_URL,
         })
         
     elif gh_run.status in ['failure', 'cancelled', 'timed_out', 'skipped', 'action_required']:
@@ -476,17 +592,17 @@ def check_for_file(request):
             'log_url': github_log_url
         })
 
+@dashboard_token_required
 def download(request):
-    filename = request.GET['filename']
-    uuid = request.GET['uuid']
-    file_path = os.path.join('exe', uuid, filename)
-    with open(file_path, 'rb') as file:
-        content = file.read()
-    response = HttpResponse(content, headers={
-        'Content-Type': 'application/vnd.microsoft.portable-executable',
-        'Content-Disposition': f'attachment; filename="{filename}"'
-    })
-    return response
+    filename = _safe_artifact_name(request.GET.get('filename'))
+    file_path = _artifact_path(request.GET.get('uuid'), filename)
+    content_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+    return FileResponse(
+        file_path.open('rb'),
+        as_attachment=True,
+        filename=filename,
+        content_type=content_type,
+    )
 
 def get_png(request):
     filename = request.GET['filename']
@@ -508,6 +624,8 @@ def create_github_run(myuuid):
     )
     new_github_run.save()
 
+@csrf_exempt
+@upload_token_required
 def update_github_run(request):
     data = json.loads(request.body)
     myuuid = data.get('uuid')
@@ -555,6 +673,7 @@ def resize_and_encode_icon(imagefile):
     return resized64
  
 #the following is used when accessed from an external source, like the rustdesk api server
+@csrf_exempt
 def startgh(request):
     #print(request)
     data_ = json.loads(request.body)
@@ -611,17 +730,23 @@ def save_png(file, uuid, domain, name):
     #return "%s/%s" % (domain, file_save_path)
     return domain, uuid, name
 
+@csrf_exempt
+@upload_token_required
 def save_custom_client(request):
     file = request.FILES['file']
-    myuuid = request.POST.get('uuid')
-    file_save_path = "exe/%s/%s" % (myuuid, file.name)
-    Path("exe/%s" % myuuid).mkdir(parents=True, exist_ok=True)
-    with open(file_save_path, "wb+") as f:
+    file_save_path = _artifact_path(
+        request.POST.get('uuid'),
+        file.name,
+        require_exists=False,
+    )
+    file_save_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_save_path.open("wb+") as f:
         for chunk in file.chunks():
             f.write(chunk)
 
     return HttpResponse("File saved successfully!")
 
+@csrf_exempt
 def cleanup_secrets(request):
     # Pass the UUID as a query param or in JSON body
     data = json.loads(request.body)
