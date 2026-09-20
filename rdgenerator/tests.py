@@ -7,6 +7,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 
 from .api_views import validate_generate_params
 from .forms import GenerateForm
+from .models import GithubRun
 from .views import use_self_hosted_runner
 
 
@@ -100,6 +101,25 @@ class BuildArtifactAPITests(TestCase):
             {artifact['name'] for artifact in build['artifacts']},
             {'proste_IT_Support.exe', 'proste_IT_Support.msi'},
         )
+
+    def test_successful_run_without_artifacts_is_marked_missing(self):
+        missing_uuid = str(uuid.uuid4())
+        GithubRun.objects.create(
+            id=123,
+            uuid=missing_uuid,
+            status='success',
+            github_run_id=456,
+        )
+
+        response = self.client.get('/api/builds', **self.auth())
+
+        self.assertEqual(response.status_code, 200)
+        build = next(
+            item for item in response.json()['builds']
+            if item['uuid'] == missing_uuid
+        )
+        self.assertEqual(build['status'], 'artifact_missing')
+        self.assertEqual(build['artifacts'], [])
 
     def test_artifact_download_is_streamed_and_requires_token(self):
         url = (

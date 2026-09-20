@@ -748,7 +748,7 @@ jobs:
         if: ${{ env.rdgen == 'true' }}
         shell: bash
         run: |
-          curl -i -X POST \
+          curl --fail-with-body -i -X POST \
             -H "Content-Type: multipart/form-data" \
             -H "Authorization: Bearer ${{ secrets.RDGEN_UPLOAD_TOKEN }}" \
             -F "file=@$GITHUB_WORKSPACE/${{ env.filename }}-${{ matrix.job.arch }}.dmg" \

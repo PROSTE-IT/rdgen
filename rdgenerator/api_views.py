@@ -207,6 +207,8 @@ def api_builds(request):
         status_value = result.get('status', run.status)
         file_build = file_builds.pop(run.uuid, None)
         artifacts = file_build['artifacts'] if file_build else []
+        if status_value == 'success' and not artifacts:
+            status_value = 'artifact_missing'
         completed_at = file_build['created_at'].isoformat() if file_build else None
         builds.append({
             'uuid': run.uuid,
