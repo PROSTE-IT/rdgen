@@ -100,6 +100,25 @@ def _trash_artifact(uuid_value, filename):
     return destination
 
 
+def _trash_build(uuid_value):
+    build_uuid = _canonical_build_uuid(uuid_value)
+    root = Path(_settings.EXE_ROOT).resolve()
+    source = root / build_uuid
+    if source.is_symlink() or not source.is_dir():
+        raise Http404("Build not found")
+    if source.resolve().parent != root:
+        raise Http404("Build not found")
+    trash_root = Path(_settings.EXE_TRASH_ROOT).resolve()
+    trash_dir = (trash_root / build_uuid).resolve()
+    if trash_root not in trash_dir.parents:
+        raise Http404("Build not found")
+    trash_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(datetime_timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    destination = trash_dir / f'{timestamp}-{secrets.token_hex(4)}-build'
+    os.replace(source, destination)
+    return destination
+
+
 def _available_builds():
     root = Path(_settings.EXE_ROOT)
     if not root.exists():
@@ -521,7 +540,7 @@ def _get_run_status(uuid_val):
         If not found, 'found' is False.
     """
     try:
-        gh_run = GithubRun.objects.get(uuid=uuid_val)
+        gh_run = GithubRun.objects.get(uuid=uuid_val, deleted_at__isnull=True)
     except GithubRun.DoesNotExist:
         return {"found": False}
 

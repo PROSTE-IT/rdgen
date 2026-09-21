@@ -1,8 +1,9 @@
 import json
 import mimetypes
 import re
-from django.http import FileResponse, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.conf import settings as _settings
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from .models import GithubRun
 from .views import (
@@ -10,6 +11,7 @@ from .views import (
     _available_builds,
     _get_run_status,
     _trash_artifact,
+    _trash_build,
     dashboard_token_required,
     generate_custom_client,
 )
@@ -207,7 +209,8 @@ def api_builds(request):
     file_builds = {build['uuid']: build for build in _available_builds()}
     builds = []
 
-    for run in GithubRun.objects.order_by('-created_at')[:100]:
+    active_runs = GithubRun.objects.filter(deleted_at__isnull=True)
+    for run in active_runs.order_by('-created_at')[:100]:
         result = _get_run_status(run.uuid)
         status_value = result.get('status', run.status)
         file_build = file_builds.pop(run.uuid, None)
@@ -249,6 +252,44 @@ def api_builds(request):
         reverse=True,
     )
     return JsonResponse({'builds': builds[:100]})
+
+
+@csrf_exempt
+@dashboard_token_required
+def api_build(request, build_uuid):
+    if request.method != 'DELETE':
+        return JsonResponse({"error": "Method not allowed."}, status=405)
+
+    build_uuid = str(build_uuid)
+    runs = GithubRun.objects.filter(uuid=build_uuid, deleted_at__isnull=True)
+    run = runs.order_by('-created_at').first()
+    terminal_statuses = {
+        'success', 'failure', 'cancelled', 'timed_out', 'skipped',
+        'action_required',
+    }
+    if run is not None and run.status not in terminal_statuses:
+        return JsonResponse(
+            {"error": "An active build cannot be deleted."},
+            status=409,
+        )
+
+    destination = None
+    try:
+        destination = _trash_build(build_uuid)
+    except Http404:
+        if run is None:
+            raise
+
+    if run is None and destination is None:
+        raise Http404("Build not found")
+
+    runs.update(deleted_at=timezone.now())
+    return JsonResponse({
+        'deleted': True,
+        'uuid': build_uuid,
+        'recoverable': destination is not None,
+        'trash_name': destination.name if destination is not None else '',
+    })
 
 
 @csrf_exempt

@@ -297,6 +297,56 @@ class BuildArtifactAPITests(TestCase):
         self.assertEqual(len(trashed), 1)
         self.assertTrue(trashed[0].name.endswith('-proste_IT_Support.exe'))
 
+    def test_build_delete_hides_run_and_moves_all_artifacts_to_trash(self):
+        GithubRun.objects.create(
+            id=125,
+            uuid=self.build_uuid,
+            status='success',
+            github_run_id=790,
+        )
+        url = f'/api/builds/{self.build_uuid}'
+
+        self.assertEqual(self.client.delete(url).status_code, 403)
+        response = self.client.delete(url, **self.auth())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['deleted'])
+        self.assertTrue(response.json()['recoverable'])
+        self.assertFalse(self.build_dir.exists())
+        trashed_builds = list((self.trash_dir / self.build_uuid).iterdir())
+        self.assertEqual(len(trashed_builds), 1)
+        self.assertTrue(trashed_builds[0].is_dir())
+        self.assertEqual(
+            {item.name for item in trashed_builds[0].iterdir()},
+            {'proste_IT_Support.exe', 'proste_IT_Support.msi'},
+        )
+        run = GithubRun.objects.get(uuid=self.build_uuid)
+        self.assertIsNotNone(run.deleted_at)
+        listed = self.client.get('/api/builds', **self.auth()).json()['builds']
+        self.assertNotIn(self.build_uuid, {item['uuid'] for item in listed})
+        status = self.client.get(
+            f'/api/status?uuid={self.build_uuid}',
+            **self.auth(),
+        )
+        self.assertEqual(status.status_code, 404)
+
+    def test_active_build_cannot_be_deleted(self):
+        GithubRun.objects.create(
+            id=126,
+            uuid=self.build_uuid,
+            status='in_progress',
+            github_run_id=791,
+        )
+
+        response = self.client.delete(
+            f'/api/builds/{self.build_uuid}',
+            **self.auth(),
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(self.build_dir.exists())
+        self.assertIsNone(GithubRun.objects.get(uuid=self.build_uuid).deleted_at)
+
     def test_legacy_download_rejects_path_traversal(self):
         response = self.client.get(
             '/download',

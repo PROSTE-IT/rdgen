@@ -9,3 +9,4 @@ class GithubRun(models.Model):
     filename = models.CharField(max_length=255, blank=True)
     platform = models.CharField(max_length=32, blank=True)
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)

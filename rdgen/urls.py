@@ -41,6 +41,11 @@ urlpatterns = [
     url(r'^api/status$',api_views.api_status),
     path('api/builds', api_views.api_builds, name='api-builds'),
     path(
+        'api/builds/<uuid:build_uuid>',
+        api_views.api_build,
+        name='api-build',
+    ),
+    path(
         'api/builds/<uuid:build_uuid>/artifacts/<str:filename>',
         api_views.api_build_artifact,
         name='api-build-artifact',
