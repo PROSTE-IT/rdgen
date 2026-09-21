@@ -327,9 +327,19 @@ jobs:
           command: |
             Invoke-WebRequest -Uri https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/allowCustom.py -OutFile allowCustom.py
             python allowCustom.py
-            # Remove Setup Server Tip
-            Invoke-WebRequest -Uri https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/removeSetupServerTip.diff -OutFile removeSetupServerTip.diff
-            git apply removeSetupServerTip.diff
+
+      - name: Remove setup server tip
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("flutter/lib/desktop/pages/connection_page.dart")
+          source = "            if (!isIncomingOnly) setupServerWidget(),"
+          replacement = "            // if (!isIncomingOnly) setupServerWidget(),"
+          content = path.read_text(encoding="utf-8")
+          if source not in content:
+              raise RuntimeError(f"Expected setup-server widget call not found in {path}")
+          path.write_text(content.replace(source, replacement, 1), encoding="utf-8")
 
       - name: Patch remote printer port to spool file
         shell: python
