@@ -1,5 +1,7 @@
 import io
+import errno
 import mimetypes
+import shutil
 from functools import wraps
 from pathlib import Path
 from datetime import datetime, timezone as datetime_timezone
@@ -54,6 +56,15 @@ dashboard_token_required = bearer_token_required('RDGEN_DASHBOARD_TOKEN')
 upload_token_required = bearer_token_required('RDGEN_UPLOAD_TOKEN')
 
 
+def _move_to_trash(source, destination):
+    try:
+        os.replace(source, destination)
+    except OSError as exc:
+        if exc.errno != errno.EXDEV:
+            raise
+        shutil.move(str(source), str(destination))
+
+
 def _canonical_build_uuid(value):
     try:
         return str(uuid.UUID(str(value)))
@@ -96,7 +107,7 @@ def _trash_artifact(uuid_value, filename):
     trash_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(datetime_timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     destination = trash_dir / f'{timestamp}-{secrets.token_hex(4)}-{safe_name}'
-    os.replace(source, destination)
+    _move_to_trash(source, destination)
     return destination
 
 
@@ -115,7 +126,7 @@ def _trash_build(uuid_value):
     trash_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(datetime_timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     destination = trash_dir / f'{timestamp}-{secrets.token_hex(4)}-build'
-    os.replace(source, destination)
+    _move_to_trash(source, destination)
     return destination
 
 

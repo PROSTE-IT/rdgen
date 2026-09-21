@@ -1,3 +1,4 @@
+import errno
 import json
 import os
 import subprocess
@@ -297,6 +298,25 @@ class BuildArtifactAPITests(TestCase):
         self.assertEqual(len(trashed), 1)
         self.assertTrue(trashed[0].name.endswith('-proste_IT_Support.exe'))
 
+    @patch(
+        'rdgenerator.views.os.replace',
+        side_effect=OSError(errno.EXDEV, 'Invalid cross-device link'),
+    )
+    def test_artifact_delete_falls_back_across_mounts(self, replace):
+        url = (
+            f'/api/builds/{self.build_uuid}/artifacts/'
+            'proste_IT_Support.exe'
+        )
+
+        response = self.client.delete(url, **self.auth())
+
+        self.assertEqual(response.status_code, 200)
+        replace.assert_called_once()
+        self.assertFalse((self.build_dir / 'proste_IT_Support.exe').exists())
+        trashed = list((self.trash_dir / self.build_uuid).iterdir())
+        self.assertEqual(len(trashed), 1)
+        self.assertTrue(trashed[0].is_file())
+
     def test_build_delete_hides_run_and_moves_all_artifacts_to_trash(self):
         GithubRun.objects.create(
             id=125,
@@ -329,6 +349,33 @@ class BuildArtifactAPITests(TestCase):
             **self.auth(),
         )
         self.assertEqual(status.status_code, 404)
+
+    @patch(
+        'rdgenerator.views.os.replace',
+        side_effect=OSError(errno.EXDEV, 'Invalid cross-device link'),
+    )
+    def test_build_delete_falls_back_across_mounts(self, replace):
+        GithubRun.objects.create(
+            id=127,
+            uuid=self.build_uuid,
+            status='failure',
+            github_run_id=792,
+        )
+
+        response = self.client.delete(
+            f'/api/builds/{self.build_uuid}',
+            **self.auth(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        replace.assert_called_once()
+        self.assertFalse(self.build_dir.exists())
+        trashed = list((self.trash_dir / self.build_uuid).iterdir())
+        self.assertEqual(len(trashed), 1)
+        self.assertTrue(trashed[0].is_dir())
+        self.assertIsNotNone(
+            GithubRun.objects.get(uuid=self.build_uuid).deleted_at
+        )
 
     def test_active_build_cannot_be_deleted(self):
         GithubRun.objects.create(
