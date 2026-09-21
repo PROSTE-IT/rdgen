@@ -36,6 +36,24 @@ RDBK_DOWNLOAD_CENTER_URL = os.environ.get(
     'https://rdbk-admin.prosteit.pl/admin/downloads/',
 )
 
+
+def _env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 't', 'yes', 'y', 'on'}
+
+
+def _parse_origins(value):
+    origins = []
+    for comma_part in value.split(','):
+        for origin in comma_part.split():
+            normalized = origin.strip().rstrip('/')
+            if normalized.lower().startswith(('https://', 'http://')):
+                origins.append(normalized)
+    return origins
+
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -45,7 +63,28 @@ DEBUG_ENV = os.environ.get("DEBUG", "False")
 DEBUG = DEBUG_ENV.lower() in ['true', '1', 't']
 
 ALLOWED_HOSTS = ['*']
-#CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split()
+
+# RDGen is commonly published through a TLS-terminating reverse proxy. Use the
+# already configured public generator URL as the safe default while allowing
+# operators with multiple public names to provide an explicit list.
+_configured_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '').strip()
+CSRF_TRUSTED_ORIGINS = _parse_origins(_configured_origins or GENURL)
+
+_public_https = any(
+    origin.lower().startswith('https://')
+    for origin in CSRF_TRUSTED_ORIGINS
+)
+if _env_bool('TRUST_X_FORWARDED_PROTO', default=_public_https):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_COOKIE_SECURE = _env_bool(
+    'CSRF_COOKIE_SECURE',
+    default=_public_https,
+)
+SESSION_COOKIE_SECURE = _env_bool(
+    'SESSION_COOKIE_SECURE',
+    default=_public_https,
+)
 
 # Application definition
 

@@ -9,6 +9,10 @@ services:
       GHUSER: "github_username"
       GHBEARER: "github_access_token"
       GENURL: "accessible_url_of_server"
+      # Optional: space- or comma-separated public origins. When omitted,
+      # GENURL is used automatically.
+      CSRF_TRUSTED_ORIGINS: ""
+      TRUST_X_FORWARDED_PROTO: ""
       ZIP_PASSWORD: ""
       GHBRANCH: "master"
       PROTOCOL: "https"

@@ -30,11 +30,18 @@
   * SECRET_KEY="your secret key" - generate a secret key by running: ```python3 -c 'import secrets; print(secrets.token_hex(100))'```
   * GHUSER="your github username"  
   * GHBEARER="your fine-grained access token"  
+  * GENURL="https://rdgen.hostname.com" - the full public origin of RDGen;
+    it is also used as the default trusted CSRF origin
   * ZIP_PASSWORD="the same password that you entered as a github secret"
   * PROTOCOL="https" *optional - defaults to "https", change to "http" if you need to
   * REPONAME="rdgen" *optional - defaults to "rdgen", change this if you renamed the repo when you forked it
   * RDGEN_UPLOAD_TOKEN="the same value as the GitHub Actions secret"
   * RDGEN_DASHBOARD_TOKEN="a different long random token shared only with RDBK"
+  * CSRF_TRUSTED_ORIGINS="https://rdgen.hostname.com" *optional - space- or
+    comma-separated list used only when RDGen is published under more than one
+    origin; otherwise `GENURL` is used automatically
+  * TRUST_X_FORWARDED_PROTO="true" *optional - keep enabled for an HTTPS
+    reverse proxy; the proxy must send `X-Forwarded-Proto`
 5. Create the persistent, recoverable artifact trash and make it writable by
    the container user: `mkdir -p artifact_trash && chown 1000:1000 artifact_trash`.
    Keep the `./artifact_trash:/opt/rdgen/artifact_trash` bind mount from the
@@ -115,7 +122,10 @@ python manage.py runserver 0.0.0.0:8000
 
 open your web browser to yourdomain:8000
 
-use nginx, caddy, traefik, etc. for ssl reverse proxy
+Use nginx, Caddy, Traefik, Nginx Proxy Manager, or an equivalent TLS reverse
+proxy. Preserve the original `Host` header and send
+`X-Forwarded-Proto: https`. Set `GENURL` to the same full public HTTPS origin;
+otherwise Django will reject form submissions with a CSRF 403 response.
 
 ### To autostart the server on boot, you can set up a systemd service called rdgen.service
 

@@ -1,3 +1,7 @@
+import json
+import os
+import subprocess
+import sys
 import tempfile
 import uuid
 from pathlib import Path
@@ -14,6 +18,87 @@ from .views import (
     remove_new_version_notification,
     use_self_hosted_runner,
 )
+
+
+class ReverseProxySettingsTests(SimpleTestCase):
+    @staticmethod
+    def load_settings(**environment):
+        process_environment = os.environ.copy()
+        for name in (
+            'CSRF_TRUSTED_ORIGINS',
+            'TRUST_X_FORWARDED_PROTO',
+            'CSRF_COOKIE_SECURE',
+            'SESSION_COOKIE_SECURE',
+        ):
+            process_environment.pop(name, None)
+        process_environment.update(environment)
+
+        script = (
+            'import json; from rdgen import settings; '
+            'print(json.dumps({'
+            '"origins": settings.CSRF_TRUSTED_ORIGINS, '
+            '"proxy": getattr(settings, "SECURE_PROXY_SSL_HEADER", None), '
+            '"csrf_secure": settings.CSRF_COOKIE_SECURE, '
+            '"session_secure": settings.SESSION_COOKIE_SECURE'
+            '}))'
+        )
+        result = subprocess.run(
+            [sys.executable, '-c', script],
+            cwd=Path(__file__).resolve().parent.parent,
+            env=process_environment,
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+        return json.loads(result.stdout)
+
+    def test_https_genurl_configures_reverse_proxy_defaults(self):
+        configured = self.load_settings(
+            GENURL='https://rdgen.prosteit.pl/',
+            PROTOCOL='https',
+        )
+
+        self.assertEqual(
+            configured['origins'],
+            ['https://rdgen.prosteit.pl'],
+        )
+        self.assertEqual(
+            configured['proxy'],
+            ['HTTP_X_FORWARDED_PROTO', 'https'],
+        )
+        self.assertTrue(configured['csrf_secure'])
+        self.assertTrue(configured['session_secure'])
+
+    def test_empty_public_url_keeps_local_http_cookie_defaults(self):
+        configured = self.load_settings(
+            GENURL='',
+            PROTOCOL='https',
+        )
+
+        self.assertEqual(configured['origins'], [])
+        self.assertIsNone(configured['proxy'])
+        self.assertFalse(configured['csrf_secure'])
+        self.assertFalse(configured['session_secure'])
+
+    def test_explicit_origins_and_proxy_opt_out_are_supported(self):
+        configured = self.load_settings(
+            GENURL='https://ignored.example',
+            PROTOCOL='https',
+            CSRF_TRUSTED_ORIGINS=(
+                'https://one.example, https://two.example/'
+            ),
+            TRUST_X_FORWARDED_PROTO='false',
+            CSRF_COOKIE_SECURE='false',
+            SESSION_COOKIE_SECURE='false',
+        )
+
+        self.assertEqual(
+            configured['origins'],
+            ['https://one.example', 'https://two.example'],
+        )
+        self.assertIsNone(configured['proxy'])
+        self.assertFalse(configured['csrf_secure'])
+        self.assertFalse(configured['session_secure'])
 
 
 class SupportAddressBookValidationTests(SimpleTestCase):
