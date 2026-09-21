@@ -405,7 +405,18 @@ jobs:
         run: |
           cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff $(dirname $(dirname $(which flutter)))
           cd $(dirname $(dirname $(which flutter)))
-          [[ "3.24.5" == ${{env.FLUTTER_VERSION}} ]] && git apply flutter_3.24.4_dropdown_menu_enableFilter.diff
+          if [[ "3.24.5" == "${{ env.FLUTTER_VERSION }}" ]]; then
+            PATCH_FILE=flutter_3.24.4_dropdown_menu_enableFilter.diff
+            if git apply --check --ignore-space-change "$PATCH_FILE"; then
+              git apply --ignore-space-change "$PATCH_FILE"
+              echo "Applied Flutter dropdown menu patch."
+            elif git apply --reverse --check --ignore-space-change "$PATCH_FILE"; then
+              echo "Flutter dropdown menu patch is already applied."
+            else
+              echo "::error::Flutter dropdown menu patch does not match this SDK."
+              exit 1
+            fi
+          fi
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
