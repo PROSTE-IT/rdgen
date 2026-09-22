@@ -5,3 +5,4 @@ gunicorn.conf
 rustdesk/
 rdbk/
 artifact_trash/
+staticfiles/
