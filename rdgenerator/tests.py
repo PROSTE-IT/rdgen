@@ -17,6 +17,7 @@ from .models import GithubRun
 from .views import (
     _get_run_status,
     allocate_pit_version,
+    managed_update_channel,
     remove_new_version_notification,
     use_self_hosted_runner,
 )
@@ -157,6 +158,36 @@ class SupportAddressBookValidationTests(SimpleTestCase):
             'removeNewVersionNotif': True,
         }))
 
+    def test_update_channel_follows_connection_capability(self):
+        self.assertEqual(
+            managed_update_channel(
+                enabled=True,
+                platform='windows',
+                direction='incoming',
+            ),
+            'windows_helpdesk',
+        )
+        for direction in ('outgoing', 'both'):
+            with self.subTest(direction=direction):
+                self.assertEqual(
+                    managed_update_channel(
+                        enabled=True,
+                        platform='windows',
+                        direction=direction,
+                    ),
+                    'windows_support',
+                )
+
+    def test_regular_build_has_no_managed_update_channel(self):
+        self.assertEqual(
+            managed_update_channel(
+                enabled=False,
+                platform='windows',
+                direction='both',
+            ),
+            '',
+        )
+
 
 class SelfHostedRunnerSelectionTests(SimpleTestCase):
     @override_settings(SH_SECRET='')
@@ -243,6 +274,8 @@ class BuildArtifactAPITests(TestCase):
             base_version='1.4.9',
             pit_revision=7,
             pit_version='1.4.9-pit.7',
+            connection_direction='both',
+            update_channel='windows_support',
         )
 
         response = self.client.get('/api/builds', **self.auth())
@@ -255,6 +288,8 @@ class BuildArtifactAPITests(TestCase):
         self.assertEqual(build['status'], 'artifact_missing')
         self.assertEqual(build['github_run_id'], 456)
         self.assertEqual(build['pit_version'], '1.4.9-pit.7')
+        self.assertEqual(build['connection_direction'], 'both')
+        self.assertEqual(build['update_channel'], 'windows_support')
         self.assertEqual(build['artifacts'], [])
 
     @patch('rdgenerator.views.requests.get')

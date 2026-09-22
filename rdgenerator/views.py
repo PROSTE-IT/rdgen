@@ -218,6 +218,15 @@ def allocate_pit_version(base_version):
     return f"{base_version}-pit.{revision}", revision
 
 
+def managed_update_channel(*, enabled, platform, direction):
+    """Return the immutable managed-update channel compiled into this build."""
+    if not enabled or platform != 'windows':
+        return ''
+    if direction == 'incoming':
+        return 'windows_helpdesk'
+    return 'windows_support'
+
+
 def generate_custom_client(params, full_url):
     """
     Core generation logic shared by web form and JSON API.
@@ -320,8 +329,10 @@ def generate_custom_client(params, full_url):
         appname = "rustdesk"
     myuuid = str(uuid.uuid4())
     pit_version, pit_revision = allocate_pit_version(version)
-    update_channel = (
-        'windows_helpdesk' if direction == 'outgoing' else 'windows_support'
+    update_channel = managed_update_channel(
+        enabled=supportAddressBook,
+        platform=platform,
+        direction=direction,
     )
 
     try:
@@ -543,6 +554,8 @@ def generate_custom_client(params, full_url):
         base_version=version if pit_version else '',
         pit_revision=pit_revision,
         pit_version=pit_version,
+        connection_direction=direction,
+        update_channel=update_channel,
     )
     try:
         response = requests.post(url, json=data, headers=headers)
@@ -559,6 +572,7 @@ def generate_custom_client(params, full_url):
                 "filename": filename,
                 "platform": platform,
                 "pit_version": pit_version,
+                "update_channel": update_channel,
                 "log_url": github_data.get('html_url')
             }
         else:

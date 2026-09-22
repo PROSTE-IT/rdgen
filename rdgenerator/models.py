@@ -11,6 +11,8 @@ class GithubRun(models.Model):
     base_version = models.CharField(max_length=32, blank=True)
     pit_revision = models.PositiveIntegerField(null=True, blank=True)
     pit_version = models.CharField(max_length=64, blank=True)
+    connection_direction = models.CharField(max_length=16, blank=True)
+    update_channel = models.CharField(max_length=32, blank=True, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
 

@@ -230,6 +230,8 @@ def api_builds(request):
             'base_version': run.base_version,
             'pit_revision': run.pit_revision,
             'pit_version': run.pit_version,
+            'connection_direction': run.connection_direction,
+            'update_channel': run.update_channel,
             'github_log_url': result.get('github_log_url'),
             'artifacts': artifacts,
             'progress_percent': result.get('progress_percent'),
@@ -251,6 +253,8 @@ def api_builds(request):
             'base_version': '',
             'pit_revision': None,
             'pit_version': '',
+            'connection_direction': '',
+            'update_channel': '',
             'github_log_url': None,
             'artifacts': file_build['artifacts'],
         })
