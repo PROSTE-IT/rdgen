@@ -115,6 +115,20 @@ jobs:
         run: |
           echo "STATUS_URL=${{ env.apiServer }}/api/updategh" >> $env:GITHUB_ENV
 
+      - name: Mark RDGen build in progress
+        if: ${{ env.rdgen == 'true' }}
+        continue-on-error: true
+        shell: pwsh
+        env:
+          RDGEN_UPLOAD_TOKEN: ${{ secrets.RDGEN_UPLOAD_TOKEN }}
+        run: |
+          $headers = @{ Authorization = "Bearer $env:RDGEN_UPLOAD_TOKEN" }
+          $body = @{
+            uuid = $env:uuid
+            status = "in_progress"
+          } | ConvertTo-Json
+          Invoke-RestMethod -Uri $env:STATUS_URL -Method Post -Headers $headers -ContentType "application/json" -Body $body
+
       - name: Checkout source code
         if: ${{ env.supportAddressBook != 'true' && env.VERSION != 'master' }}
         uses: actions/checkout@v4
@@ -783,6 +797,21 @@ jobs:
           command: |
             curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" ${{ env.apiServer }}/api/save_custom_client
             curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" ${{ env.apiServer }}/api/save_custom_client || true
+
+      - name: Update RDGen build status
+        if: ${{ always() && env.rdgen == 'true' }}
+        continue-on-error: true
+        shell: pwsh
+        env:
+          RDGEN_UPLOAD_TOKEN: ${{ secrets.RDGEN_UPLOAD_TOKEN }}
+          FINAL_BUILD_STATUS: ${{ job.status }}
+        run: |
+          $headers = @{ Authorization = "Bearer $env:RDGEN_UPLOAD_TOKEN" }
+          $body = @{
+            uuid = $env:uuid
+            status = $env:FINAL_BUILD_STATUS
+          } | ConvertTo-Json
+          Invoke-RestMethod -Uri $env:STATUS_URL -Method Post -Headers $headers -ContentType "application/json" -Body $body
 
   cleanup:
     needs: [build-for-windows-flutter]
