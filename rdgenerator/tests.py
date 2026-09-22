@@ -142,6 +142,43 @@ class SupportAddressBookValidationTests(SimpleTestCase):
         _, errors = validate_generate_params(self.form_data(platform='linux'))
         self.assertIn('platform', errors)
 
+    def test_helpdesk_form_requires_unattended_access_password(self):
+        form = GenerateForm(data=self.form_data(
+            direction='incoming',
+            permanentPassword='',
+        ))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('permanentPassword', form.errors)
+
+    def test_helpdesk_api_requires_unattended_access_password(self):
+        _, errors = validate_generate_params(self.form_data(
+            direction='incoming',
+            permanentPassword='',
+        ))
+
+        self.assertIn('permanentPassword', errors)
+
+    def test_helpdesk_accepts_password_or_password_and_click_modes(self):
+        for mode in ('password', 'password-click'):
+            with self.subTest(mode=mode):
+                form = GenerateForm(data=self.form_data(
+                    direction='incoming',
+                    permanentPassword='unattended-test-password',
+                    passApproveMode=mode,
+                ))
+                self.assertTrue(form.is_valid(), form.errors)
+
+    def test_helpdesk_rejects_click_only_approval(self):
+        form = GenerateForm(data=self.form_data(
+            direction='incoming',
+            permanentPassword='unattended-test-password',
+            passApproveMode='click',
+        ))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('passApproveMode', form.errors)
+
     def test_support_build_always_removes_upstream_update_notification(self):
         self.assertTrue(remove_new_version_notification({
             'supportAddressBook': True,

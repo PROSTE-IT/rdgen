@@ -322,6 +322,19 @@ def generate_custom_client(params, full_url):
     theme = params.get('theme', 'system')
     themeDorO = params.get('themeDorO', 'default')
     passApproveMode = params.get('passApproveMode', 'password-click')
+    if supportAddressBook and direction == 'incoming':
+        if not str(permPass or '').strip():
+            return {
+                'success': False,
+                'error': 'Windows Helpdesk requires a permanent password for unattended access.',
+                'status_code': 400,
+            }
+        if passApproveMode == 'click':
+            return {
+                'success': False,
+                'error': 'Windows Helpdesk must allow password authentication.',
+                'status_code': 400,
+            }
     denyLan = params.get('denyLan', False)
     enableDirectIP = params.get('enableDirectIP', False)
     autoClose = params.get('autoClose', False)

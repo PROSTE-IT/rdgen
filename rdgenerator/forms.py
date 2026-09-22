@@ -149,6 +149,17 @@ class GenerateForm(forms.Form):
                     'supportAddressBookUrl',
                     'Enter the shared address book API URL.',
                 )
+            if cleaned_data.get('direction') == 'incoming':
+                if not (cleaned_data.get('permanentPassword') or '').strip():
+                    self.add_error(
+                        'permanentPassword',
+                        'Windows Helpdesk requires a permanent password for unattended access.',
+                    )
+                if cleaned_data.get('passApproveMode') == 'click':
+                    self.add_error(
+                        'passApproveMode',
+                        'Windows Helpdesk must allow password authentication.',
+                    )
         return cleaned_data
 
     def clean_iconfile(self):

@@ -131,6 +131,15 @@ def validate_generate_params(data):
             errors['version'] = 'Shared address book requires RustDesk 1.4.9.'
         if not cleaned.get('supportAddressBookUrl'):
             errors['supportAddressBookUrl'] = 'This field is required when shared address book is enabled.'
+        if cleaned.get('direction') == 'incoming':
+            if not str(cleaned.get('permanentPassword') or '').strip():
+                errors['permanentPassword'] = (
+                    'Windows Helpdesk requires a permanent password for unattended access.'
+                )
+            if cleaned.get('passApproveMode') == 'click':
+                errors['passApproveMode'] = (
+                    'Windows Helpdesk must allow password authentication.'
+                )
 
     # File fields are not used in API mode (base64 fields are used instead)
     cleaned['iconfile'] = None
