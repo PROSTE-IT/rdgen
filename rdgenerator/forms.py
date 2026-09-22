@@ -19,6 +19,18 @@ class GenerateForm(forms.Form):
     #General
     exename = forms.CharField(label="Name for EXE file", required=True)
     appname = forms.CharField(label="Custom App Name", required=False)
+    buildProfile = forms.ChoiceField(
+        label="Build profile",
+        choices=[
+            ('standard', 'Standard application'),
+            (
+                'quick_support',
+                'Quick Support (portable or installable, incoming only)',
+            ),
+        ],
+        initial='standard',
+        required=False,
+    )
     direction = forms.ChoiceField(widget=forms.RadioSelect, choices=[
         ('incoming', 'Incoming Only'),
         ('outgoing', 'Outgoing Only'),
@@ -99,6 +111,28 @@ class GenerateForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        build_profile = cleaned_data.get('buildProfile') or 'standard'
+        cleaned_data['buildProfile'] = build_profile
+        if build_profile == 'quick_support':
+            if cleaned_data.get('platform') != 'windows':
+                self.add_error(
+                    'platform',
+                    'Quick Support is currently available only for Windows 64Bit.',
+                )
+            if cleaned_data.get('version') != '1.4.9':
+                self.add_error(
+                    'version',
+                    'Quick Support currently requires RustDesk 1.4.9.',
+                )
+            cleaned_data.update({
+                'direction': 'incoming',
+                'installation': 'installationY',
+                'settings': 'settingsN',
+                'supportAddressBook': False,
+                'removeNewVersionNotif': True,
+                'permanentPassword': '',
+                'hidecm': False,
+            })
         if cleaned_data.get('supportAddressBook'):
             if cleaned_data.get('platform') != 'windows':
                 self.add_error(

@@ -13,6 +13,7 @@ class GithubRun(models.Model):
     pit_version = models.CharField(max_length=64, blank=True)
     connection_direction = models.CharField(max_length=16, blank=True)
     update_channel = models.CharField(max_length=32, blank=True, db_index=True)
+    build_profile = models.CharField(max_length=32, blank=True, default='standard')
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
 

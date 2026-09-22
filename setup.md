@@ -57,14 +57,35 @@
 4. Save a json configuration file from your rdgen web ui
 5. Use the [rdgen-cli] (https://github.com/AlekseyLapunov/rdgen-cli) to submit your json configuration with the added key "sh_secret_field" with the value matching your SH_SECRET
 
-## Use your own Windows code signing token
+## Sign Windows builds with Azure Artifact Signing
 
-1. You will need a USB signing token plugged into a Windows computer
-2. On the computer with the USB signing token, you need to make sure it is set up correctly to sign using signtool.exe
-3. Run a small [signing api](https://github.com/bryangerlach/signing_api) server on the computer with the USB token connected. Follow the setup instructions for this server.
-4. Now for your rdgen repo, add github secrets for 
-   - SIGN_BASE_URL (the accesible over the internet URL for the signing api server)
-   - SIGN_API_KEY (the api key you have set on your signing api server)
+The Windows workflows are prepared for
+[Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/).
+Signing is fail-closed when enabled, but remains disabled until the repository
+variable `AZURE_ARTIFACT_SIGNING_ENABLED` is explicitly set to `true`.
+
+1. Complete the Artifact Signing identity validation, create a signing account
+   and a public-trust certificate profile.
+2. Create a Microsoft Entra application or managed identity with a federated
+   GitHub Actions credential restricted to this repository and the intended
+   branch/environment. Grant it only the Artifact Signing certificate profile
+   signer role for the selected profile.
+3. Add these GitHub Actions secrets:
+   - `AZURE_CLIENT_ID`
+   - `AZURE_TENANT_ID`
+   - `AZURE_SUBSCRIPTION_ID`
+   - `AZURE_ARTIFACT_SIGNING_ENDPOINT`
+   - `AZURE_ARTIFACT_SIGNING_ACCOUNT_NAME`
+   - `AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE_NAME`
+4. Leave `AZURE_ARTIFACT_SIGNING_ENABLED` unset or `false` while validation is
+   pending. Builds continue to work and are reported as unsigned.
+5. After validation, run a test build and verify the signer and timestamp. Only
+   then set the repository variable `AZURE_ARTIFACT_SIGNING_ENABLED=true`.
+
+The workflow signs runtime EXE/DLL files before portable packing and signs the
+final EXE/MSI artifacts afterwards. Every signing stage is verified and aborts
+the build if a signature is missing or invalid. Authentication uses GitHub OIDC;
+no PFX file or long-lived client secret is stored in the repository.
 
 
 ## Host manually:

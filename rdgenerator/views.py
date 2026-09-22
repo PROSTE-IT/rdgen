@@ -192,6 +192,7 @@ def remove_new_version_notification(params):
     """Support builds never show the upstream RustDesk update prompt."""
     return bool(
         params.get('supportAddressBook')
+        or params.get('buildProfile') == 'quick_support'
         or params.get('removeNewVersionNotif', False)
     )
 
@@ -218,10 +219,14 @@ def allocate_pit_version(base_version):
     return f"{base_version}-pit.{revision}", revision
 
 
-def managed_update_channel(*, enabled, platform, direction):
+def managed_update_channel(
+    *, enabled, platform, direction, build_profile='standard'
+):
     """Return the immutable managed-update channel compiled into this build."""
     if not enabled or platform != 'windows':
         return ''
+    if build_profile == 'quick_support':
+        return 'windows_helpdesk'
     if direction == 'incoming':
         return 'windows_helpdesk'
     return 'windows_support'
@@ -243,14 +248,24 @@ def generate_custom_client(params, full_url):
     selfhosted = use_self_hosted_runner(user_secret)
     platform = params.get('platform', 'windows')
     version = params.get('version', '1.4.9')
+    build_profile = params.get('buildProfile') or 'standard'
+    quick_support = build_profile == 'quick_support'
     delayFix = params.get('delayFix', True)
     xOffline = params.get('xOffline', False)
     hidecm = params.get('hidecm', False)
-    supportAddressBook = params.get('supportAddressBook', False)
+    supportAddressBook = bool(
+        params.get('supportAddressBook', False) and not quick_support
+    )
     removeNewVersionNotif = remove_new_version_notification(params)
     supportAddressBookUrl = (
         params.get('supportAddressBookUrl') or 'https://rdbk.prosteit.pl'
     ).strip()
+    if quick_support and (platform != 'windows' or version != '1.4.9'):
+        return {
+            'success': False,
+            'error': 'Quick Support builds require Windows 64Bit and RustDesk 1.4.9.',
+            'status_code': 400,
+        }
     if supportAddressBook and (platform != 'windows' or version != '1.4.9'):
         return {
             'success': False,
@@ -281,12 +296,20 @@ def generate_custom_client(params, full_url):
         urlLink = "https://rustdesk.com"
     if not downloadLink:
         downloadLink = "https://rustdesk.com/download"
-    direction = params.get('direction', 'both')
-    installation = params.get('installation', 'installationY')
-    settings = params.get('settings', 'settingsY')
+    direction = 'incoming' if quick_support else params.get('direction', 'both')
+    installation = (
+        'installationY'
+        if quick_support
+        else params.get('installation', 'installationY')
+    )
+    settings = (
+        'settingsN'
+        if quick_support
+        else params.get('settings', 'settingsY')
+    )
     appname = params.get('appname', '')
     if not appname:
-        appname = "rustdesk"
+        appname = "proste IT Quick Support" if quick_support else "rustdesk"
     filename = params.get('exename', 'rustdesk')
     compname = params.get('compname', '')
     if not compname:
@@ -295,7 +318,7 @@ def generate_custom_client(params, full_url):
     if not androidappid:
         androidappid = "com.carriez.flutter_hbb"
     compname = compname.replace("&","\\&")
-    permPass = params.get('permanentPassword', '')
+    permPass = '' if quick_support else params.get('permanentPassword', '')
     theme = params.get('theme', 'system')
     themeDorO = params.get('themeDorO', 'default')
     passApproveMode = params.get('passApproveMode', 'password-click')
@@ -325,14 +348,17 @@ def generate_custom_client(params, full_url):
         filename = filename.replace(" ","_")
     else:
         filename = "rustdesk"
+    if quick_support and not re.search(r'(?:-qs|_qs)$', filename, re.IGNORECASE):
+        filename = f"{filename}-qs"
     if not all(char.isascii() for char in appname):
         appname = "rustdesk"
     myuuid = str(uuid.uuid4())
     pit_version, pit_revision = allocate_pit_version(version)
     update_channel = managed_update_channel(
-        enabled=supportAddressBook,
+        enabled=supportAddressBook or quick_support,
         platform=platform,
         direction=direction,
+        build_profile=build_profile,
     )
 
     try:
@@ -500,9 +526,12 @@ def generate_custom_client(params, full_url):
         "xOffline": 'true' if xOffline else 'false',
         "removeNewVersionNotif": 'true' if removeNewVersionNotif else 'false',
         "supportAddressBook": 'true' if supportAddressBook else 'false',
-        "RDBK_API_URL": supportAddressBookUrl if supportAddressBook else '',
-        "RDBK_UPDATE_CHANNEL": update_channel if supportAddressBook else '',
+        "RDBK_API_URL": (
+            supportAddressBookUrl if supportAddressBook or quick_support else ''
+        ),
+        "RDBK_UPDATE_CHANNEL": update_channel,
         "RDBK_BUILD_UUID": myuuid,
+        "CLIENT_VARIANT": build_profile,
         "PIT_BASE_VERSION": version if pit_version else '',
         "PIT_VERSION": pit_version,
         "PIT_REVISION": str(pit_revision) if pit_revision is not None else '',
@@ -556,6 +585,7 @@ def generate_custom_client(params, full_url):
         pit_version=pit_version,
         connection_direction=direction,
         update_channel=update_channel,
+        build_profile=build_profile,
     )
     try:
         response = requests.post(url, json=data, headers=headers)
@@ -573,6 +603,7 @@ def generate_custom_client(params, full_url):
                 "platform": platform,
                 "pit_version": pit_version,
                 "update_channel": update_channel,
+                "build_profile": build_profile,
                 "log_url": github_data.get('html_url')
             }
         else:

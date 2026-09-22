@@ -298,6 +298,15 @@
                     {{ form.exename }}<span id="filenameError" class="error"></span><br><br>
                     <label for="{{ form.appname.id_for_label }}">Custom Application Name (leave blank to use default):</label>
                     {{ form.appname }}<br><br>
+                    <label for="{{ form.buildProfile.id_for_label }}">Profil aplikacji:</label>
+                    {{ form.buildProfile }}
+                    <p id="quickSupportProfileNote" class="rdgen-profile-note" hidden>
+                        Quick Support tworzy pojedynczy przenośny plik EXE do połączeń
+                        przychodzących. Użytkownik może opcjonalnie zainstalować go z poziomu
+                        aplikacji. Po instalacji przechodzi ona do profilu Windows Helpdesk
+                        i korzysta z jego kanału aktualizacji. Ustawienia, stałe hasło oraz
+                        książka technika RDBK są wyłączone.
+                    </p><br>
                     <label for="{{ form.supportAddressBook.id_for_label }}">{{ form.supportAddressBook }} Enable PROSTE IT shared support address book</label><br>
                     <label for="{{ form.supportAddressBookUrl.id_for_label }}">Shared address book API URL:</label>
                     {{ form.supportAddressBookUrl }}
@@ -442,6 +451,44 @@
                 document.getElementById("{{ form.passApproveMode.id_for_label }}").value = 'password-click';
             }
         });
+        const buildProfile = document.getElementById("{{ form.buildProfile.id_for_label }}");
+        const quickSupportProfileNote = document.getElementById('quickSupportProfileNote');
+
+        function applyBuildProfile() {
+            const quickSupport = buildProfile.value === 'quick_support';
+            quickSupportProfileNote.hidden = !quickSupport;
+            if (!quickSupport) {
+                return;
+            }
+
+            document.getElementById('id_platform').value = 'windows';
+            document.querySelectorAll('.platform-icon').forEach(icon => {
+                icon.classList.toggle('active', icon.dataset.platform === 'windows');
+            });
+            document.getElementById("{{ form.version.id_for_label }}").value = '1.4.9';
+            document.querySelectorAll('input[name="direction"]').forEach(input => {
+                input.checked = input.value === 'incoming';
+            });
+            document.getElementById("{{ form.installation.id_for_label }}").value = 'installationY';
+            document.getElementById("{{ form.settings.id_for_label }}").value = 'settingsN';
+            document.getElementById("{{ form.supportAddressBook.id_for_label }}").checked = false;
+            document.getElementById("{{ form.removeNewVersionNotif.id_for_label }}").checked = true;
+            document.getElementById("{{ form.permanentPassword.id_for_label }}").value = '';
+            document.getElementById("{{ form.hidecm.id_for_label }}").checked = false;
+            document.getElementById('passwordRequirement').style.display = 'none';
+
+            const appName = document.getElementById("{{ form.appname.id_for_label }}");
+            if (!appName.value.trim()) {
+                appName.value = 'proste IT Quick Support';
+            }
+            const executableName = document.getElementById("{{ form.exename.id_for_label }}");
+            if (!executableName.value.trim()) {
+                executableName.value = 'proste_IT_Quick_Support';
+            }
+        }
+
+        buildProfile.addEventListener('change', applyBuildProfile);
+        applyBuildProfile();
         const enableKeyboard = document.getElementById("{{ form.enableKeyboard.id_for_label }}");
         const enableClipboard = document.getElementById("{{ form.enableClipboard.id_for_label }}");
         const enableFileTransfer = document.getElementById("{{ form.enableFileTransfer.id_for_label }}");
@@ -744,6 +791,7 @@
                                 }
                             }
                             showLoadWarnings(skippedKeys);
+                            applyBuildProfile();
                         } catch (error) {
                             alert("Error loading data. Invalid JSON file.");
                         }

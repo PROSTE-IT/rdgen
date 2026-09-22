@@ -204,6 +204,16 @@ body.rdgen-page .download-link:hover {
     font-weight: 600;
 }
 
+.rdgen-profile-note {
+    margin: 2px 0 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(253, 176, 34, 0.34);
+    border-radius: 9px;
+    color: #ffe2a8;
+    background: rgba(253, 176, 34, 0.08);
+    font-size: 0.88rem;
+}
+
 .rdgen-generator-page input[type="text"],
 .rdgen-generator-page input[type="password"],
 .rdgen-generator-page input[type="url"],

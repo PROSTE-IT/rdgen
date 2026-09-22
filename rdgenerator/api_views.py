@@ -28,6 +28,7 @@ THEME_DORO_CHOICES = ['default', 'override']
 PASS_APPROVE_MODE_CHOICES = ['password', 'click', 'password-click']
 PERMISSIONS_DORO_CHOICES = ['default', 'override']
 PERMISSIONS_TYPE_CHOICES = ['custom', 'full', 'view']
+BUILD_PROFILE_CHOICES = ['standard', 'quick_support']
 
 # Boolean fields
 BOOL_FIELDS = [
@@ -77,6 +78,7 @@ def validate_generate_params(data):
         'passApproveMode': (PASS_APPROVE_MODE_CHOICES, 'password-click'),
         'permissionsDorO': (PERMISSIONS_DORO_CHOICES, 'default'),
         'permissionsType': (PERMISSIONS_TYPE_CHOICES, 'custom'),
+        'buildProfile': (BUILD_PROFILE_CHOICES, 'standard'),
     }
     for field, (choices, default) in choice_validations.items():
         value = data.get(field, default)
@@ -106,6 +108,21 @@ def validate_generate_params(data):
                 'Contains characters unsupported in build scripts '
                 '(& \\ | \' " $ `, newlines).'
             )
+
+    if cleaned.get('buildProfile') == 'quick_support':
+        if cleaned.get('platform') != 'windows':
+            errors['platform'] = 'Quick Support requires Windows 64Bit.'
+        if cleaned.get('version') != '1.4.9':
+            errors['version'] = 'Quick Support requires RustDesk 1.4.9.'
+        cleaned.update({
+            'direction': 'incoming',
+            'installation': 'installationY',
+            'settings': 'settingsN',
+            'supportAddressBook': False,
+            'removeNewVersionNotif': True,
+            'permanentPassword': '',
+            'hidecm': False,
+        })
 
     if cleaned.get('supportAddressBook'):
         if cleaned.get('platform') != 'windows':
@@ -232,6 +249,7 @@ def api_builds(request):
             'pit_version': run.pit_version,
             'connection_direction': run.connection_direction,
             'update_channel': run.update_channel,
+            'build_profile': run.build_profile,
             'github_log_url': result.get('github_log_url'),
             'artifacts': artifacts,
             'progress_percent': result.get('progress_percent'),
@@ -255,6 +273,7 @@ def api_builds(request):
             'pit_version': '',
             'connection_direction': '',
             'update_channel': '',
+            'build_profile': 'standard',
             'github_log_url': None,
             'artifacts': file_build['artifacts'],
         })

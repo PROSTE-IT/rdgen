@@ -158,6 +158,54 @@ class SupportAddressBookValidationTests(SimpleTestCase):
             'removeNewVersionNotif': True,
         }))
 
+    def test_quick_support_form_enforces_installable_incoming_profile(self):
+        form = GenerateForm(data=self.form_data(
+            buildProfile='quick_support',
+            direction='both',
+            installation='installationY',
+            settings='settingsY',
+            permanentPassword='must-not-be-embedded',
+            hidecm=True,
+        ))
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['direction'], 'incoming')
+        self.assertEqual(form.cleaned_data['installation'], 'installationY')
+        self.assertEqual(form.cleaned_data['settings'], 'settingsN')
+        self.assertFalse(form.cleaned_data['supportAddressBook'])
+        self.assertEqual(form.cleaned_data['permanentPassword'], '')
+        self.assertFalse(form.cleaned_data['hidecm'])
+        self.assertTrue(form.cleaned_data['removeNewVersionNotif'])
+
+    def test_quick_support_api_enforces_installable_incoming_profile(self):
+        cleaned, errors = validate_generate_params(self.form_data(
+            buildProfile='quick_support',
+            supportAddressBook=True,
+            supportAddressBookUrl='',
+            direction='outgoing',
+            installation='installationY',
+            settings='settingsY',
+            permanentPassword='must-not-be-embedded',
+            hidecm=True,
+        ))
+
+        self.assertFalse(errors)
+        self.assertEqual(cleaned['direction'], 'incoming')
+        self.assertEqual(cleaned['installation'], 'installationY')
+        self.assertEqual(cleaned['settings'], 'settingsN')
+        self.assertFalse(cleaned['supportAddressBook'])
+        self.assertEqual(cleaned['permanentPassword'], '')
+        self.assertFalse(cleaned['hidecm'])
+
+    def test_quick_support_rejects_non_windows_platform(self):
+        form = GenerateForm(data=self.form_data(
+            buildProfile='quick_support',
+            platform='linux',
+        ))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('platform', form.errors)
+
     def test_update_channel_follows_connection_capability(self):
         self.assertEqual(
             managed_update_channel(
@@ -186,6 +234,17 @@ class SupportAddressBookValidationTests(SimpleTestCase):
                 direction='both',
             ),
             '',
+        )
+
+    def test_quick_support_installs_into_helpdesk_update_channel(self):
+        self.assertEqual(
+            managed_update_channel(
+                enabled=True,
+                platform='windows',
+                direction='incoming',
+                build_profile='quick_support',
+            ),
+            'windows_helpdesk',
         )
 
 
