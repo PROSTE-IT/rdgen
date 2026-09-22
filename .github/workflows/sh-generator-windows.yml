@@ -609,9 +609,19 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           $myappname = "${{ env.appname }}" -replace '\s','_'
-          cp "rustdesk/${{ env.appname }}.exe" "rustdesk/${myappname}.exe" -ErrorAction SilentlyContinue
           pushd ./res/msi
-          python preprocess.py --app-name "$myappname" --arp -d ../../rustdesk
+          $msiArgs = @(
+            "preprocess.py", "--app-name", "${{ env.appname }}",
+            "--upgrade-code-name", $myappname, "--arp", "-d", "../../rustdesk"
+          )
+          if ($env:PIT_REVISION) {
+            $msiArgs += @(
+              "--version", $env:PIT_BASE_VERSION,
+              "--revision-version", $env:PIT_REVISION,
+              "--display-version", $env:PIT_VERSION
+            )
+          }
+          python @msiArgs
           nuget restore msi.sln
           msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
           cp ./Package/bin/x64/Release/en-us/Package.msi ../../SignOutput/rustdesk-latest.msi

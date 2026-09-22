@@ -16,6 +16,7 @@ from .forms import GenerateForm
 from .models import GithubRun
 from .views import (
     _get_run_status,
+    allocate_pit_version,
     remove_new_version_notification,
     use_self_hosted_runner,
 )
@@ -172,6 +173,25 @@ class SelfHostedRunnerSelectionTests(SimpleTestCase):
         self.assertFalse(use_self_hosted_runner('wrong-secret'))
 
 
+class BuildVersionSequenceTests(TestCase):
+    def test_revisions_are_shared_by_all_build_variants(self):
+        first_version, first_revision = allocate_pit_version('1.4.9')
+        second_version, second_revision = allocate_pit_version('1.4.9')
+
+        self.assertEqual((first_version, first_revision), ('1.4.9-pit.1', 1))
+        self.assertEqual((second_version, second_revision), ('1.4.9-pit.2', 2))
+
+    def test_new_upstream_version_starts_its_own_sequence(self):
+        allocate_pit_version('1.4.9')
+
+        version, revision = allocate_pit_version('1.5.0')
+
+        self.assertEqual((version, revision), ('1.5.0-pit.1', 1))
+
+    def test_master_does_not_allocate_a_product_version(self):
+        self.assertEqual(allocate_pit_version('master'), ('', None))
+
+
 @override_settings(
     RDGEN_DASHBOARD_TOKEN='dashboard-test-token',
     RDGEN_UPLOAD_TOKEN='upload-test-token',
@@ -220,6 +240,9 @@ class BuildArtifactAPITests(TestCase):
             uuid=missing_uuid,
             status='success',
             github_run_id=456,
+            base_version='1.4.9',
+            pit_revision=7,
+            pit_version='1.4.9-pit.7',
         )
 
         response = self.client.get('/api/builds', **self.auth())
@@ -230,6 +253,8 @@ class BuildArtifactAPITests(TestCase):
             if item['uuid'] == missing_uuid
         )
         self.assertEqual(build['status'], 'artifact_missing')
+        self.assertEqual(build['github_run_id'], 456)
+        self.assertEqual(build['pit_version'], '1.4.9-pit.7')
         self.assertEqual(build['artifacts'], [])
 
     @patch('rdgenerator.views.requests.get')

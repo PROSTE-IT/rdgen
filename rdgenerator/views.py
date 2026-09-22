@@ -18,9 +18,10 @@ import json
 import uuid
 import pyzipper
 from django.conf import settings as _settings
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import F, Q
 from .forms import GenerateForm
-from .models import GithubRun
+from .models import BuildVersionSequence, GithubRun
 from PIL import Image
 from urllib.parse import quote
 
@@ -195,6 +196,28 @@ def remove_new_version_notification(params):
     )
 
 
+def allocate_pit_version(base_version):
+    """Allocate one shared PROSTE IT revision for a RustDesk base version."""
+    base_version = str(base_version or "").strip()
+    if not re.fullmatch(r"\d+\.\d+\.\d+", base_version):
+        return "", None
+
+    with transaction.atomic():
+        sequence, _ = (
+            BuildVersionSequence.objects.select_for_update().get_or_create(
+                base_version=base_version,
+                defaults={"last_revision": 0},
+            )
+        )
+        BuildVersionSequence.objects.filter(pk=sequence.pk).update(
+            last_revision=F("last_revision") + 1,
+        )
+        sequence.refresh_from_db(fields=["last_revision"])
+
+    revision = sequence.last_revision
+    return f"{base_version}-pit.{revision}", revision
+
+
 def generate_custom_client(params, full_url):
     """
     Core generation logic shared by web form and JSON API.
@@ -296,6 +319,10 @@ def generate_custom_client(params, full_url):
     if not all(char.isascii() for char in appname):
         appname = "rustdesk"
     myuuid = str(uuid.uuid4())
+    pit_version, pit_revision = allocate_pit_version(version)
+    update_channel = (
+        'windows_helpdesk' if direction == 'outgoing' else 'windows_support'
+    )
 
     try:
         iconfile = params.get('iconfile')
@@ -463,6 +490,11 @@ def generate_custom_client(params, full_url):
         "removeNewVersionNotif": 'true' if removeNewVersionNotif else 'false',
         "supportAddressBook": 'true' if supportAddressBook else 'false',
         "RDBK_API_URL": supportAddressBookUrl if supportAddressBook else '',
+        "RDBK_UPDATE_CHANNEL": update_channel if supportAddressBook else '',
+        "RDBK_BUILD_UUID": myuuid,
+        "PIT_BASE_VERSION": version if pit_version else '',
+        "PIT_VERSION": pit_version,
+        "PIT_REVISION": str(pit_revision) if pit_revision is not None else '',
         "compname": compname,
         "androidappid":androidappid,
         "filename":filename
@@ -508,6 +540,9 @@ def generate_custom_client(params, full_url):
         status="Starting generator...please wait",
         filename=filename,
         platform=platform,
+        base_version=version if pit_version else '',
+        pit_revision=pit_revision,
+        pit_version=pit_version,
     )
     try:
         response = requests.post(url, json=data, headers=headers)
@@ -523,6 +558,7 @@ def generate_custom_client(params, full_url):
                 "uuid": myuuid,
                 "filename": filename,
                 "platform": platform,
+                "pit_version": pit_version,
                 "log_url": github_data.get('html_url')
             }
         else:
