@@ -705,14 +705,18 @@ def generator_view(request):
                     'uuid': result['uuid'],
                     'status': "Starting generator...please wait",
                     'platform': result['platform'],
-                    'log_url': result['log_url']
+                    'log_url': result['log_url'],
+                    'download_center_url': _settings.RDBK_DOWNLOAD_CENTER_URL,
                 })
             else:
                 return JsonResponse({"error": result['error']}, status=result.get('status_code', 500))
     else:
         form = GenerateForm()
     #return render(request, 'maintenance.html')
-    return render(request, 'generator.html', {'form': form})
+    return render(request, 'generator.html', {
+        'form': form,
+        'download_center_url': _settings.RDBK_DOWNLOAD_CENTER_URL,
+    })
 
 
 def check_for_file(request):
@@ -742,7 +746,8 @@ def check_for_file(request):
             'filename': filename, 
             'uuid': uuid, 
             'platform': platform,
-            'status': gh_run.status
+            'status': gh_run.status,
+            'download_center_url': _settings.RDBK_DOWNLOAD_CENTER_URL,
         })
         
     else:
@@ -751,7 +756,8 @@ def check_for_file(request):
             'uuid': uuid, 
             'status': gh_run.status, 
             'platform': platform, 
-            'log_url': github_log_url
+            'log_url': github_log_url,
+            'download_center_url': _settings.RDBK_DOWNLOAD_CENTER_URL,
         })
 
 @dashboard_token_required

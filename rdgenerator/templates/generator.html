@@ -1,9 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RustDesk Custom Client Builder</title>
+    <title>Generator RustDesk · PROSTE IT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -222,18 +223,33 @@
             color: #0095EA;
         }
       </style>
+    <link rel="stylesheet" href="{% static 'rdgenerator/rdgen.css' %}">
 </head>
-<body>
-    <h1><i class="fas fa-cogs"></i> RustDesk Custom Client Builder</h1>
+<body class="rdgen-page rdgen-generator-page">
+<main class="rdgen-shell">
+    <header class="rdgen-hero">
+        <div>
+            <p class="rdgen-eyebrow">PROSTE IT · NARZĘDZIA</p>
+            <h1>Generator RustDesk</h1>
+            <p class="rdgen-hero-subtitle">Budowanie spersonalizowanych aplikacji RustDesk dla zespołu i klientów.</p>
+        </div>
+        {% if download_center_url %}
+            <div class="rdgen-hero-actions">
+                <a class="rdgen-secondary-button" href="{{ download_center_url }}" target="_blank" rel="noopener">
+                    <i class="fas fa-download"></i> Centrum pobierania ↗
+                </a>
+            </div>
+        {% endif %}
+    </header>
     <form id="myForm" action="/generator" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="save-load-section-container">
             <div class="section">
-                <h2 id="saveLoadTitle">Save/Load Configuration <i class="fas fa-chevron-down"></i></h2>  
+                <h2 id="saveLoadTitle"><i class="fas fa-folder-open"></i> Konfiguracja <i class="fas fa-chevron-down"></i></h2>
                 <div class="save-load-section">  
-                    <button type="button" onclick="saveFormData()">Save Configuration</button>
+                    <button type="button" onclick="saveFormData()"><i class="fas fa-save"></i> Zapisz konfigurację</button>
                     <input type="file" id="fileInput" style="display:none;" accept=".json">
-                    <button type="button" onclick="loadFormData()">Load Configuration</button>
+                    <button type="button" onclick="loadFormData()"><i class="fas fa-upload"></i> Wczytaj konfigurację</button>
                 </div>
             </div>
         </div>
@@ -245,7 +261,7 @@
             </ul>
         {% endif %}
         <div class="platform">
-            <h2><i class="fas fa-desktop"></i> Select Platform</h2>
+            <h2><i class="fas fa-desktop"></i> Platforma</h2>
                 <div class="platform-icons">
                     <span class="fa-stack fa-lg">
                         <i class="fab fa-windows  fa-stack-2x platform-icon active" data-platform="windows"></i>
@@ -266,7 +282,7 @@
                     <option value="android">Android</option>
                     <option value="macos">macOS</option>
                 </select>
-                <label for="{{ form.version.id_for_label }}">Rustdesk Version:</label>
+                <label for="{{ form.version.id_for_label }}">Wersja RustDesk:</label>
                 {{ form.version }}
                 {% if form.version.help_text %}
                     <span class="help-text">{{ form.version.help_text }}</span>
@@ -277,7 +293,7 @@
         </div>
         <div class="container">   
             <div class="section">
-                <h2><i class="fas fa-sliders-h"></i> General</h2>
+                <h2><i class="fas fa-sliders-h"></i> Podstawowe</h2>
                     <label for="{{ form.exename.id_for_label }}">Name of the configuration (no spaces or special characters, English characters only):</label>
                     {{ form.exename }}<span id="filenameError" class="error"></span><br><br>
                     <label for="{{ form.appname.id_for_label }}">Custom Application Name (leave blank to use default):</label>
@@ -297,7 +313,7 @@
             </div>
 
             <div class="section">
-                <h2><i class="fas fa-server"></i> Custom Server</h2>
+                <h2><i class="fas fa-server"></i> Serwer RustDesk</h2>
                     <label for="{{ form.serverIP.id_for_label }}">Host:</label>
                     {{ form.serverIP }}<br><br>
                     <label for="{{ form.serverPort.id_for_label }}">Port:</label>
@@ -316,7 +332,7 @@
         </div>
         <div class="container">
             <div class="section">
-                <h2><i class="fas fa-shield-alt"></i> Security</h2>
+                <h2><i class="fas fa-shield-alt"></i> Bezpieczeństwo</h2>
                     <label for="{{ form.passApproveMode.id_for_label }}">Password Approve mode:</label>
                     {{ form.passApproveMode }}<br><br>
                     <div id="passwordRequirement" class="password-requirement">To use the hide connection window feature, please set a permanent password.</div>
@@ -334,7 +350,7 @@
             </div>
         
             <div class="section">
-                <h2><i class="fas fa-paint-brush"></i> Visual</h2>
+                <h2><i class="fas fa-paint-brush"></i> Wygląd</h2>
                     {{ form.iconbase64.as_hidden }}
                     {{ form.logobase64.as_hidden }}
                     {{ form.privacybase64.as_hidden }}
@@ -356,7 +372,7 @@
         </div>
         <div class="container">
             <div class="section">
-                <h2><i class="fas fa-lock"></i> Permissions</h2>
+                <h2><i class="fas fa-lock"></i> Uprawnienia</h2>
                     The following Permissions can be set as default (the user can change the settings) or override (the settings cannot be changed).<br>
                     {{ form.permissionsDorO }}
                     <label for="{{ form.permissionsType.id_for_label }}">Permission type:</label>
@@ -375,13 +391,13 @@
                         <label for="{{ form.enableCamera.id_for_label }}">{{ form.enableCamera }} Enable remote camera</label>
                         <label for="{{ form.enableTerminal.id_for_label }}">{{ form.enableTerminal }} Enable remote terminal</label>
                     </div><br>
-                <h2><i class="fas fa-code"></i> Code Changes</h2>
+                <h2><i class="fas fa-code"></i> Modyfikacje klienta</h2>
                     <label for="{{ form.xOffline.id_for_label }}">{{ form.xOffline }} Display an X for offline devices in the addressbook.</label><br>
                     <label for="{{ form.removeNewVersionNotif.id_for_label }}">{{ form.removeNewVersionNotif }} Remove notification for new versions.</label><br>
             </div>
 
             <div class="section">
-                <h2><i class="fas fa-cog"></i> Other</h2>
+                <h2><i class="fas fa-cog"></i> Pozostałe</h2>
                     <label for="{{ form.removeWallpaper.id_for_label }}">{{ form.removeWallpaper }} Remove wallpaper during incoming sessions</label><br>
                     <a href="https://rustdesk.com/docs/en/self-host/client-configuration/advanced-settings/">Click here for a list of Default/Override settings</a>
                     <label for="{{ form.defaultManual.id_for_label }}">Default settings</label><br>
@@ -390,28 +406,14 @@
                     {{ form.overrideManual }}<br><br>
             </div>
         </div>
-        <div class="platform">
+        <div class="platform rdgen-submit-row">
             <div class="section">
-                <button type="submit"><i class="fas fa-rocket"></i> Generate Custom Client</button>
+                <button type="submit"><i class="fas fa-rocket"></i> Uruchom build</button>
             </div>
         </div>
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="https://github.com/bryangerlach/rdgen" 
-            target="_blank" 
-            class="sponsor-button">
-                <i class="fab fa-github"></i>
-                Source Code on Github
-            </a>
-        </div>
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="https://github.com/sponsors/bryangerlach?o=esb"
-            target="_blank" 
-            class="sponsor-button">
-                <i class="fab fa-github"></i>
-                Donate
-            </a>
-        </div>
     </form>
+    <footer class="rdgen-footer">PROSTE IT · generator spersonalizowanych klientów RustDesk</footer>
+</main>
     <script>
         document.querySelectorAll('.platform-icon').forEach(icon => {
             icon.addEventListener('click', function() {

@@ -1,9 +1,10 @@
+{% load static %}
 <!doctype html>
-<html lang="en">
+<html lang="pl">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rustdesk Client Generator</title>
+    <title>Generator RustDesk · przerwa techniczna</title>
     <style>
       html, body {
         height: 100%;
@@ -50,11 +51,13 @@
         margin: 1rem 0 0 0;
       }
     </style>
+    <link rel="stylesheet" href="{% static 'rdgenerator/rdgen.css' %}">
   </head>
-  <body>
-    <main>
-      <h1>Rustdesk Client Generator</h1>
-      <p>The Rustdesk Client Generator is currently under construction, please come back at a later time.</p>
+  <body class="rdgen-page rdgen-status-page rdgen-maintenance-page">
+    <main class="rdgen-status-card">
+      <p class="rdgen-eyebrow">PROSTE IT · GENERATOR RUSTDESK</p>
+      <h1>Przerwa techniczna</h1>
+      <p>Generator jest obecnie niedostępny. Spróbuj ponownie później.</p>
     </main>
   </body>
 </html>

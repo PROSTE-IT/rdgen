@@ -1,7 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
-    <title id="pageTitle">Build Generated Successfully</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Build gotowy</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -59,8 +62,11 @@
             border-radius: 8px;
         }
     </style>
+    <link rel="stylesheet" href="{% static 'rdgenerator/rdgen.css' %}">
 </head>
-<body>
+<body class="rdgen-page rdgen-status-page rdgen-success-page">
+<main class="rdgen-status-card">
+    <p class="rdgen-eyebrow">PROSTE IT · GENERATOR RUSTDESK</p>
     <svg id="windowsLogo" class="platform-logo" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <linearGradient id="windowsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -124,7 +130,7 @@
     </svg>
 
     <div>
-        <h2 class="success-text">Build Generated Successfully</h2>
+        <h2 class="success-text">Build jest gotowy</h2>
         <div class="download-section">
             <p>Pliki są gotowe i zostały zapisane w chronionym panelu PROSTE IT.</p>
             <a href="{{ download_center_url }}" class="download-link">Otwórz Centrum pobierania</a>
@@ -132,6 +138,8 @@
     </div>
 
     <div id="platformNote" class="platform-note"></div>
+    <a href="/" class="back-link">← Wróć do generatora</a>
+</main>
 
     <script>
         function updatePlatformUI() {
@@ -149,24 +157,24 @@
 
             // Set appropriate logo and title
             if (platform === 'macos') {
-                document.getElementById('pageTitle').textContent = 'MacOS Build Generated';
+                document.getElementById('pageTitle').textContent = 'Build macOS gotowy';
                 platformLogos.macos.style.display = 'block';
-                platformNote.textContent = 'Note: For macOS, you may need to adjust security settings to run the application.';
+                platformNote.textContent = 'Aplikacja macOS może wymagać dodatkowego przygotowania przed dystrybucją.';
                 platformNote.style.display = 'block';
             } else if (platform === 'windows' || platform === 'windows-x86') {
-                document.getElementById('pageTitle').textContent = 'Windows Build Generated';
+                document.getElementById('pageTitle').textContent = 'Build Windows gotowy';
                 platformLogos.windows.style.display = 'block';
-                platformNote.textContent = 'Note: You might need to disable SmartScreen or adjust Windows security settings.';
+                platformNote.textContent = 'Instalatory są dostępne w chronionym Centrum pobierania.';
                 platformNote.style.display = 'block';
             } else if (platform === 'linux') {
-                document.getElementById('pageTitle').textContent = 'Linux Build Generated';
+                document.getElementById('pageTitle').textContent = 'Build Linux gotowy';
                 platformLogos.linux.style.display = 'block';
-                platformNote.textContent = 'Note: Ensure you have the necessary dependencies installed.';
+                platformNote.textContent = 'Przed wdrożeniem sprawdź zależności wymagane przez wybraną dystrybucję.';
                 platformNote.style.display = 'block';
             } else if (platform === 'android') {
-                document.getElementById('pageTitle').textContent = 'Android Build Generated';
+                document.getElementById('pageTitle').textContent = 'Build Android gotowy';
                 platformLogos.android.style.display = 'block';
-                platformNote.textContent = 'Note: You may need to enable "Unknown Sources" in device settings.';
+                platformNote.textContent = 'Sposób instalacji zależy od przyjętego kanału dystrybucji Android.';
                 platformNote.style.display = 'block';
             }
         }
@@ -175,4 +183,4 @@
         updatePlatformUI();
     </script>
 </body>
-</html>{{ ... }}
+</html>
