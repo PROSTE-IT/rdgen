@@ -285,6 +285,19 @@ class SupportAddressBookValidationTests(SimpleTestCase):
         )
 
 
+class GeneratorConfigurationPageTests(SimpleTestCase):
+    def test_legacy_configuration_requires_explicit_profile_choice(self):
+        response = self.client.get('/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="legacyConfigReview"')
+        self.assertContains(response, 'data-legacy-profile="windows_support"')
+        self.assertContains(response, 'data-legacy-profile="windows_helpdesk"')
+        self.assertContains(response, 'data-legacy-profile="standard"')
+        self.assertContains(response, 'data-legacy-profile="quick_support"')
+        self.assertContains(response, 'RDGEN_CONFIG_SCHEMA_VERSION = 2')
+
+
 class SelfHostedRunnerSelectionTests(SimpleTestCase):
     @override_settings(SH_SECRET='')
     def test_empty_configured_and_submitted_secrets_use_github_runner(self):
@@ -579,3 +592,51 @@ class BuildArtifactAPITests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual((self.build_dir / 'new-build.exe').read_bytes(), b'new')
+
+    def test_artifact_upload_accepts_complete_batch(self):
+        response = self.client.post(
+            '/save_custom_client',
+            {
+                'uuid': self.build_uuid,
+                'file': [
+                    SimpleUploadedFile('batch-build.exe', b'EXE batch'),
+                    SimpleUploadedFile('batch-build.msi', b'MSI batch'),
+                ],
+            },
+            HTTP_AUTHORIZATION='Bearer upload-test-token',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            (self.build_dir / 'batch-build.exe').read_bytes(),
+            b'EXE batch',
+        )
+        self.assertEqual(
+            (self.build_dir / 'batch-build.msi').read_bytes(),
+            b'MSI batch',
+        )
+
+    def test_artifact_upload_validates_entire_batch_before_writing(self):
+        response = self.client.post(
+            '/save_custom_client',
+            {
+                'uuid': self.build_uuid,
+                'file': [
+                    SimpleUploadedFile('not-written.exe', b'EXE'),
+                    SimpleUploadedFile('invalid.txt', b'not an artifact'),
+                ],
+            },
+            HTTP_AUTHORIZATION='Bearer upload-test-token',
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse((self.build_dir / 'not-written.exe').exists())
+
+    def test_artifact_upload_rejects_empty_request(self):
+        response = self.client.post(
+            '/save_custom_client',
+            {'uuid': self.build_uuid},
+            HTTP_AUTHORIZATION='Bearer upload-test-token',
+        )
+
+        self.assertEqual(response.status_code, 400)

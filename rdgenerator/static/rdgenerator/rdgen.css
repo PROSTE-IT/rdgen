@@ -214,6 +214,44 @@ body.rdgen-page .download-link:hover {
     font-size: 0.88rem;
 }
 
+.rdgen-config-review {
+    margin: 0 0 22px;
+    padding: 20px;
+    border: 1px solid rgba(253, 176, 34, 0.5);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(253, 176, 34, 0.12), rgba(249, 77, 28, 0.08));
+    box-shadow: var(--rdgen-shadow);
+}
+
+.rdgen-config-review[hidden] {
+    display: none;
+}
+
+.rdgen-config-review h2 {
+    margin: 4px 0 8px;
+}
+
+.rdgen-config-review p:not(.rdgen-eyebrow) {
+    margin: 0;
+    color: var(--rdgen-muted);
+}
+
+.rdgen-config-review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.rdgen-config-review-actions button {
+    margin: 0;
+}
+
+.rdgen-submit-row button[type="submit"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
 .rdgen-generator-page input[type="text"],
 .rdgen-generator-page input[type="password"],
 .rdgen-generator-page input[type="url"],

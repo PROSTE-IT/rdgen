@@ -945,18 +945,47 @@ def save_png(file, uuid, domain, name):
 @csrf_exempt
 @upload_token_required
 def save_custom_client(request):
-    file = request.FILES['file']
-    file_save_path = _artifact_path(
-        request.POST.get('uuid'),
-        file.name,
-        require_exists=False,
-    )
-    file_save_path.parent.mkdir(parents=True, exist_ok=True)
-    with file_save_path.open("wb+") as f:
-        for chunk in file.chunks():
-            f.write(chunk)
+    uploaded_files = request.FILES.getlist('file')
+    if not uploaded_files:
+        return HttpResponse('Missing build artifact', status=400)
 
-    return HttpResponse("File saved successfully!")
+    # Resolve and validate the complete batch before writing any file. The
+    # workflow sends EXE and MSI in one request so an invalid second artifact
+    # cannot leave a seemingly usable, partial build behind.
+    targets = []
+    seen_names = set()
+    for uploaded_file in uploaded_files:
+        target = _artifact_path(
+            request.POST.get('uuid'),
+            uploaded_file.name,
+            require_exists=False,
+        )
+        if target.name in seen_names:
+            return HttpResponse('Duplicate build artifact', status=400)
+        seen_names.add(target.name)
+        targets.append((uploaded_file, target))
+
+    staged = []
+    try:
+        for uploaded_file, target in targets:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temporary = target.with_name(
+                f'.{target.name}.{secrets.token_hex(8)}.upload'
+            )
+            with temporary.open('wb+') as destination:
+                for chunk in uploaded_file.chunks():
+                    destination.write(chunk)
+            staged.append((temporary, target))
+
+        for temporary, target in staged:
+            os.replace(temporary, target)
+    finally:
+        for temporary, _target in staged:
+            temporary.unlink(missing_ok=True)
+
+    return HttpResponse(
+        f'{len(targets)} build artifact(s) saved successfully!'
+    )
 
 @csrf_exempt
 def cleanup_secrets(request):

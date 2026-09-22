@@ -243,6 +243,22 @@
     </header>
     <form id="myForm" action="/generator" method="post" enctype="multipart/form-data">
         {% csrf_token %}
+        <section id="legacyConfigReview" class="rdgen-config-review" hidden aria-live="polite">
+            <div>
+                <p class="rdgen-eyebrow">WYMAGANY WYBÓR PROFILU</p>
+                <h2>Wczytano konfigurację ze starszej wersji RDGen</h2>
+                <p>
+                    Stary plik nie określa jednoznacznie współczesnego profilu aplikacji.
+                    Wybierz przeznaczenie tego builda. Pozostałe ustawienia pozostaną bez zmian.
+                </p>
+            </div>
+            <div class="rdgen-config-review-actions">
+                <button type="button" data-legacy-profile="windows_support">Windows Support</button>
+                <button type="button" data-legacy-profile="windows_helpdesk">Windows Helpdesk</button>
+                <button type="button" data-legacy-profile="standard">Zwykły RustDesk</button>
+                <button type="button" data-legacy-profile="quick_support">Quick Support</button>
+            </div>
+        </section>
         <div class="save-load-section-container">
             <div class="section">
                 <h2 id="saveLoadTitle"><i class="fas fa-folder-open"></i> Konfiguracja <i class="fas fa-chevron-down"></i></h2>
@@ -623,6 +639,19 @@
             icon.classList.toggle("fa-chevron-up");
         });
 
+        const RDGEN_CONFIG_SCHEMA_VERSION = 2;
+
+        function selectedManagedProfile() {
+            if (buildProfile.value === 'quick_support') {
+                return 'quick_support';
+            }
+            if (!supportAddressBook.checked) {
+                return 'standard';
+            }
+            const direction = document.querySelector('input[name="direction"]:checked')?.value;
+            return direction === 'incoming' ? 'windows_helpdesk' : 'windows_support';
+        }
+
         async function saveFormData() {
             const filename = document.getElementById("{{ form.exename.id_for_label }}").value;
             if (!filename) {
@@ -703,6 +732,12 @@
                 }
             }
 
+            // Versioned metadata lets newer RDGen releases distinguish a
+            // deliberate Standard build from a legacy file that simply did
+            // not know about managed client profiles.
+            formData._rdgenConfigSchema = RDGEN_CONFIG_SCHEMA_VERSION;
+            formData._rdgenProfile = selectedManagedProfile();
+
             const jsonData = JSON.stringify(formData, null, 2);
             const blob = new Blob([jsonData], { type: "application/json" });
             const url = URL.createObjectURL(blob);
@@ -730,6 +765,63 @@
         // carried over verbatim on save (e.g. cycleMonitor from another
         // form version) instead of being silently dropped.
         let carriedUnknownFields = {};
+        let legacyConfigurationNeedsReview = false;
+
+        function setLegacyReviewRequired(required) {
+            legacyConfigurationNeedsReview = required;
+            const review = document.getElementById('legacyConfigReview');
+            const submit = document.querySelector('#myForm button[type="submit"]');
+            review.hidden = !required;
+            submit.disabled = required;
+            if (required) {
+                review.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function selectLegacyProfile(profile) {
+            buildProfile.value = profile === 'quick_support' ? 'quick_support' : 'standard';
+            supportAddressBook.checked = profile === 'windows_support' || profile === 'windows_helpdesk';
+
+            if (supportAddressBook.checked || profile === 'quick_support') {
+                document.getElementById('id_platform').value = 'windows';
+                document.getElementById("{{ form.version.id_for_label }}").value = '1.4.9';
+                document.querySelectorAll('.platform-icon').forEach(icon => {
+                    icon.classList.toggle('active', icon.dataset.platform === 'windows');
+                });
+            }
+
+            if (profile === 'windows_support' || profile === 'windows_helpdesk') {
+                const direction = profile === 'windows_helpdesk' ? 'incoming' : 'both';
+                document.querySelectorAll('input[name="direction"]').forEach(input => {
+                    input.checked = input.value === direction;
+                });
+                const addressBookUrl = document.getElementById("{{ form.supportAddressBookUrl.id_for_label }}");
+                if (!addressBookUrl.value.trim()) {
+                    addressBookUrl.value = 'https://rdbk.prosteit.pl';
+                }
+            }
+
+            applyBuildProfile();
+            setLegacyReviewRequired(false);
+
+            if (profile === 'windows_helpdesk') {
+                const password = document.getElementById("{{ form.permanentPassword.id_for_label }}");
+                if (!password.value) {
+                    password.focus();
+                }
+            }
+        }
+
+        document.querySelectorAll('[data-legacy-profile]').forEach(button => {
+            button.addEventListener('click', () => selectLegacyProfile(button.dataset.legacyProfile));
+        });
+
+        document.getElementById('myForm').addEventListener('submit', event => {
+            if (legacyConfigurationNeedsReview) {
+                event.preventDefault();
+                setLegacyReviewRequired(true);
+            }
+        });
 
         function showLoadWarnings(keys) {
             let banner = document.getElementById('loadWarnings');
@@ -753,16 +845,24 @@
             const fileInput = document.getElementById("fileInput");
             fileInput.click();
 
-            fileInput.addEventListener("change", (event) => {
+            fileInput.onchange = (event) => {
                 const file = event.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         try {
                             const formData = JSON.parse(e.target.result);
+                            const schemaVersion = Number(formData._rdgenConfigSchema || 0);
+                            const profileIsExplicit = (
+                                Object.prototype.hasOwnProperty.call(formData, 'buildProfile') &&
+                                Object.prototype.hasOwnProperty.call(formData, 'supportAddressBook')
+                            );
                             carriedUnknownFields = {};
                             const skippedKeys = [];
                             for (const key in formData) {
+                                if (key.startsWith('_rdgen')) {
+                                    continue;
+                                }
                                 // More robust selector: checks for name OR id
                                 const elements = document.querySelectorAll(`[name="${key}"], [id="${key}"]`);
 
@@ -816,13 +916,16 @@
                             }
                             showLoadWarnings(skippedKeys);
                             applyBuildProfile();
+                            setLegacyReviewRequired(
+                                schemaVersion < RDGEN_CONFIG_SCHEMA_VERSION || !profileIsExplicit
+                            );
                         } catch (error) {
                             alert("Error loading data. Invalid JSON file.");
                         }
                     };
                     reader.readAsText(file);
                 }
-            });
+            };
         }
     </script>
 </body>
