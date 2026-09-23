@@ -325,9 +325,9 @@
                         nienadzorowanego musi być zapisane w bieżącym pakiecie Windows Helpdesk.
                     </p><br>
                     <label for="{{ form.supportAddressBook.id_for_label }}">{{ form.supportAddressBook }} Enable PROSTE IT RDBK backend integration</label><br>
-                    <label for="{{ form.supportAddressBookUrl.id_for_label }}">Shared address book API URL:</label>
+                    <label for="{{ form.supportAddressBookUrl.id_for_label }}">RDBK backend API URL:</label>
                     {{ form.supportAddressBookUrl }}
-                    <span class="help-text">Support build only. Requires Windows 64Bit and RustDesk 1.4.9.</span><br><br>
+                    <span class="help-text">Backend URL for PROSTE IT Windows Support and Windows Helpdesk builds. Quick Support uses it automatically. Requires Windows 64Bit and RustDesk 1.4.9.</span><br><br>
                     <label for="{{ form.direction.id_for_label }}">Connection Type:</label>
                     {{ form.direction }}<br><br>
                     <label for="{{ form.installation.id_for_label }}">Disable Installation:</label>
