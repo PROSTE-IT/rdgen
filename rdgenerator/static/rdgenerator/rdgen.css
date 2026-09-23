@@ -256,6 +256,7 @@ body.rdgen-page .download-link:hover {
 .rdgen-generator-page input[type="password"],
 .rdgen-generator-page input[type="url"],
 .rdgen-generator-page input[type="number"],
+.rdgen-generator-page input[type="search"],
 .rdgen-generator-page select,
 .rdgen-generator-page textarea,
 .rdgen-generator-page input[type="file"] {
@@ -311,6 +312,119 @@ body.rdgen-page .download-link:hover {
     border: 1px solid var(--rdgen-border);
     border-radius: 9px;
     background: rgba(9, 23, 37, 0.58);
+}
+
+.rdgen-section-intro {
+    margin: 0 0 16px;
+    color: var(--rdgen-muted);
+}
+
+.rdgen-advanced-catalog .section {
+    overflow: hidden;
+}
+
+.rdgen-advanced-group {
+    margin-top: 12px;
+    border: 1px solid var(--rdgen-border);
+    border-radius: 11px;
+    background: rgba(9, 23, 37, 0.42);
+}
+
+.rdgen-advanced-group[hidden],
+.rdgen-advanced-setting[hidden] {
+    display: none;
+}
+
+.rdgen-advanced-group summary,
+.rdgen-manual-settings summary {
+    padding: 14px 16px;
+    color: var(--rdgen-text);
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.rdgen-advanced-group summary span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    margin-left: 7px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    color: #ffd0c2;
+    background: var(--rdgen-orange-soft);
+    font-size: 0.78rem;
+}
+
+.rdgen-advanced-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0 12px 12px;
+}
+
+.rdgen-advanced-setting {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--rdgen-border);
+    border-radius: 9px;
+    background: rgba(12, 33, 52, 0.74);
+}
+
+.rdgen-advanced-setting label {
+    min-height: 2.7em;
+}
+
+.rdgen-advanced-setting .rdgen-advanced-checkbox {
+    display: flex;
+    align-items: flex-start;
+    min-height: auto;
+    margin: 0 0 10px;
+    cursor: pointer;
+}
+
+.rdgen-advanced-setting input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin-top: 3px;
+}
+
+.rdgen-advanced-setting code,
+.rdgen-manual-settings code,
+.rdgen-catalog-source code {
+    color: #ffab94;
+    overflow-wrap: anywhere;
+}
+
+.rdgen-advanced-setting code {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.78rem;
+}
+
+.rdgen-advanced-setting small {
+    display: block;
+    margin-top: 7px;
+    color: var(--rdgen-muted);
+}
+
+.rdgen-empty-state {
+    margin: 12px 0;
+    padding: 16px;
+    border: 1px dashed var(--rdgen-border);
+    border-radius: 9px;
+    color: var(--rdgen-muted);
+    text-align: center;
+}
+
+.rdgen-catalog-source {
+    margin: 16px 0 0;
+    color: var(--rdgen-muted);
+    font-size: 0.86rem;
+}
+
+.rdgen-manual-settings[open] summary {
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--rdgen-border);
 }
 
 .rdgen-generator-page .platform-icons {
@@ -577,6 +691,10 @@ body.rdgen-status-page {
     .rdgen-secondary-button {
         width: 100%;
     }
+
+    .rdgen-advanced-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 600px) {
@@ -593,6 +711,10 @@ body.rdgen-status-page {
     }
 
     .rdgen-generator-page .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+
+    .rdgen-advanced-grid {
         grid-template-columns: 1fr;
     }
 

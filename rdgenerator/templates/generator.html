@@ -452,7 +452,13 @@
                     Zaznaczony checkbox dodaje opisaną opcję do konfiguracji. Niezaznaczony
                     oznacza „nie ustawiaj” i zachowuje wartość domyślną RustDesk. Pola list i
                     wartości liczbowe również mają opcję „Nie ustawiaj”. Wszystko trafia do
-                    warstwy wybranej w sekcji „Uprawnienia”.
+                    warstwy wybranej w sekcji „Uprawnienia” (poza opcjami opisanymi jako
+                    obsługiwane wyłącznie w ustawieniach domyślnych).
+                </p>
+                <p class="rdgen-profile-note">
+                    <strong>Uwaga o hasłach:</strong> wartości pól poufnych są osadzane w kliencie
+                    i trafiają także do zapisanego pliku konfiguracji RDGen. Traktuj taki plik jak
+                    dane poufne i nie dodawaj go do Git.
                 </p>
                 <label for="advancedSettingsSearch">Szukaj po nazwie lub kluczu ustawienia:</label>
                 <input id="advancedSettingsSearch" type="search" placeholder="np. kursor, dźwięk, show-remote-cursor">
@@ -482,7 +488,7 @@
                 {% endfor %}
                 <p class="rdgen-catalog-source">
                     Katalog odwzorowuje opcje udokumentowane dla klienta RustDesk 1.4.9.
-                    <a href="https://rustdesk.com/docs/en/self-host/client-configuration/advanced-settings/" target="_blank" rel="noopener">Otwórz dokumentację RustDesk ↗</a>
+                    <a href="https://rustdesk.com/docs/pl/self-host/client-configuration/advanced-settings/" target="_blank" rel="noopener">Otwórz polską dokumentację RustDesk ↗</a>
                 </p>
             </div>
         </div>
@@ -501,7 +507,7 @@
         </div>
         <div class="platform rdgen-submit-row">
             <div class="section">
-                <button type="submit"><i class="fas fa-rocket"></i> Uruchom build</button>
+                <button type="submit"><i class="fas fa-rocket"></i> Uruchom budowanie</button>
             </div>
         </div>
     </form>

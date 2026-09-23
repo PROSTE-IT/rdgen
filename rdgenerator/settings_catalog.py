@@ -19,7 +19,15 @@ ADVANCED_SETTING_GROUPS = OrderedDict([
 ])
 
 
-def _boolean(field, key, label, group, help_text='', checked_value='Y'):
+def _boolean(
+    field,
+    key,
+    label,
+    group,
+    help_text='',
+    checked_value='Y',
+    default_only=False,
+):
     return {
         'field': field,
         'key': key,
@@ -28,6 +36,7 @@ def _boolean(field, key, label, group, help_text='', checked_value='Y'):
         'kind': 'boolean',
         'help': help_text,
         'checked_value': checked_value,
+        'default_only': default_only,
     }
 
 
@@ -162,9 +171,7 @@ ADVANCED_SETTINGS = [
     _choice('adv_lang', 'lang', 'Język aplikacji RustDesk', 'general', LANGUAGE_CHOICES),
     _boolean('adv_auto_record_incoming', 'allow-auto-record-incoming', 'Automatycznie nagrywaj sesje przychodzące', 'general'),
     _boolean('adv_auto_record_outgoing', 'allow-auto-record-outgoing', 'Automatycznie nagrywaj sesje wychodzące', 'general'),
-    _boolean('adv_hide_recording_button', 'hide-recording-button', 'Ukryj przycisk nagrywania w sesji', 'general'),
     _text('adv_video_save_directory', 'video-save-directory', 'Folder nagrań użytkownika', 'general'),
-    _text('adv_windows_service_video_directory', 'windows-service-video-save-directory', 'Folder nagrań usługi Windows', 'general', 'Wymagana bezwzględna ścieżka Windows.'),
     _boolean('adv_allow_auto_update', 'allow-auto-update', 'Zezwól na automatyczne aktualizacje RustDesk', 'general', 'Dotyczy oficjalnego mechanizmu aktualizacji; dla buildów zarządzanych PROSTE IT pozostaw wyłączone.'),
     _boolean('adv_confirm_closing_tabs', 'enable-confirm-closing-tabs', 'Pytaj przed zamknięciem wielu kart', 'general'),
     _boolean('adv_enable_abr', 'enable-abr', 'Włącz adaptacyjny bitrate', 'general'),
@@ -203,7 +210,8 @@ ADVANCED_SETTINGS = [
     _boolean('adv_allow_websocket', 'allow-websocket', 'Zezwól na połączenia WebSocket', 'security'),
     _boolean('adv_allow_https_21114', 'allow-https-21114', 'Zezwól na HTTPS na porcie 21114', 'security'),
     _boolean('adv_allow_numeric_otp', 'allow-numeric-one-time-password', 'Używaj wyłącznie cyfr w haśle jednorazowym', 'security'),
-    _boolean('adv_enable_trusted_devices', 'enable-trusted-devices', 'Włącz zaufane urządzenia', 'security'),
+    _boolean('adv_disable_trusted_devices', 'enable-trusted-devices', 'Wyłącz zaufane urządzenia (zawsze wymagaj 2FA)', 'security', checked_value='N'),
+    _boolean('adv_disable_device_registration', 'register-device', 'Nie rejestruj urządzenia w konsoli Pro', 'security', 'Wyłącza logowanie, przypisywanie, audyt i strategie dla tego urządzenia.', checked_value='N'),
     _boolean('adv_allow_logon_password', 'allow-logon-screen-password', 'Zezwól na hasło z ekranu logowania Windows', 'security'),
     _boolean('adv_allow_hostname_as_id', 'allow-hostname-as-id', 'Zezwól używać nazwy hosta jako identyfikatora', 'security'),
     _text('adv_relay_server', 'relay-server', 'Wymuszony serwer relay', 'security'),
@@ -215,7 +223,6 @@ ADVANCED_SETTINGS = [
     _boolean('adv_allow_remote_cm_modification', 'allow-remote-cm-modification', 'Zezwól na zdalną zmianę ustawień menedżera połączeń', 'interface'),
     _boolean('adv_perm_change_accept_window', 'enable-perm-change-in-accept-window', 'Zezwól zmieniać uprawnienia w oknie akceptacji', 'interface'),
     _boolean('adv_remove_preset_password_warning', 'remove-preset-password-warning', 'Ukryj ostrzeżenie o zapisanym haśle', 'interface'),
-    _boolean('adv_hide_general_settings', 'hide-general-settings', 'Ukryj ustawienia ogólne', 'interface'),
     _boolean('adv_hide_security_settings', 'hide-security-settings', 'Ukryj ustawienia bezpieczeństwa', 'interface'),
     _boolean('adv_hide_network_settings', 'hide-network-settings', 'Ukryj ustawienia sieci', 'interface'),
     _boolean('adv_hide_server_settings', 'hide-server-settings', 'Ukryj ustawienia serwera', 'interface'),
@@ -230,6 +237,7 @@ ADVANCED_SETTINGS = [
     _boolean('adv_one_way_file_transfer', 'one-way-file-transfer', 'Włącz jednokierunkowy transfer plików', 'interface'),
     _boolean('adv_d3d_render', 'allow-d3d-render', 'Zezwól na renderowanie Direct3D', 'interface'),
     _boolean('adv_main_window_on_top', 'main-window-always-on-top', 'Główne okno zawsze na wierzchu', 'interface'),
+    _boolean('adv_touch_mode', 'touch-mode', 'Domyślnie używaj trybu dotykowego', 'interface'),
     _boolean('adv_ask_for_note', 'allow-ask-for-note', 'Zezwól pytać o notatkę po sesji', 'interface'),
     _boolean('adv_disable_change_password', 'disable-change-permanent-password', 'Zablokuj zmianę stałego hasła', 'interface'),
     _boolean('adv_disable_change_id', 'disable-change-id', 'Zablokuj zmianę identyfikatora', 'interface'),
@@ -244,14 +252,15 @@ ADVANCED_SETTINGS = [
     _number('adv_floating_window_size', 'floating-window-size', 'Rozmiar pływającego okna Android', 'mobile', 32, 320),
     _boolean('adv_floating_window_untouchable', 'floating-window-untouchable', 'Przepuszczaj dotyk przez pływające okno', 'mobile'),
     _number('adv_floating_window_transparency', 'floating-window-transparency', 'Przezroczystość pływającego okna', 'mobile', 0, 10, '0 = niewidoczne, 10 = pełna widoczność.'),
+    _text('adv_floating_window_svg', 'floating-window-svg', 'Własna ikona SVG pływającego okna', 'mobile', 'Wprowadź zawartość SVG w jednym wierszu.'),
     _choice('adv_keep_screen_on', 'keep-screen-on', 'Utrzymuj ekran Android włączony', 'mobile', [
         ('never', 'Nigdy'),
         ('during-controlled', 'Podczas udostępniania ekranu'),
         ('service-on', 'Gdy usługa działa'),
     ]),
     _boolean('adv_android_half_scale', 'enable-android-software-encoding-half-scale', 'Skaluj obraz o połowę przy kodowaniu programowym Android', 'mobile'),
-    _boolean('adv_show_virtual_mouse', 'show-virtual-mouse', 'Pokazuj wirtualną mysz na urządzeniu mobilnym', 'mobile'),
-    _boolean('adv_show_virtual_joystick', 'show-virtual-joystick', 'Pokazuj wirtualny joystick na urządzeniu mobilnym', 'mobile'),
+    _boolean('adv_show_virtual_mouse', 'show-virtual-mouse', 'Pokazuj wirtualną mysz na urządzeniu mobilnym', 'mobile', 'RustDesk obsługuje tę opcję wyłącznie jako ustawienie domyślne.', default_only=True),
+    _boolean('adv_show_virtual_joystick', 'show-virtual-joystick', 'Pokazuj wirtualny joystick na urządzeniu mobilnym', 'mobile', 'Wymaga wirtualnej myszy; RustDesk obsługuje tę opcję wyłącznie jako ustawienie domyślne.', default_only=True),
 
     # Textual/specialized values.
     _text('adv_display_name', 'display-name', 'Nazwa wyświetlana klienta', 'identity'),
@@ -281,14 +290,18 @@ ADVANCED_VALUE_SETTINGS = [
 ]
 
 
-def apply_advanced_settings(target, params):
+def apply_advanced_settings(target, params, default_target=None):
     """Apply explicit catalog selections to one custom-client settings layer."""
     for setting in ADVANCED_SETTINGS:
+        destination = (
+            default_target
+            if setting.get('default_only') and default_target is not None
+            else target
+        )
         value = params.get(setting['field'])
         if setting['kind'] == 'boolean':
             if value:
-                target[setting['key']] = setting.get('checked_value', 'Y')
+                destination[setting['key']] = setting.get('checked_value', 'Y')
             continue
         if value not in (None, ''):
-            target[setting['key']] = str(value)
-
+            destination[setting['key']] = str(value)

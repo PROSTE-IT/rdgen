@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">Build gotowy</title>
+    <title id="pageTitle">Kompilacja gotowa</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -130,7 +130,7 @@
     </svg>
 
     <div>
-        <h2 class="success-text">Build jest gotowy</h2>
+        <h2 class="success-text">Kompilacja jest gotowa</h2>
         <div class="download-section">
             <p>Pliki są gotowe i zostały zapisane w chronionym panelu PROSTE IT.</p>
             <a href="{{ download_center_url }}" class="download-link">Otwórz Centrum pobierania</a>
@@ -157,22 +157,22 @@
 
             // Set appropriate logo and title
             if (platform === 'macos') {
-                document.getElementById('pageTitle').textContent = 'Build macOS gotowy';
+                document.getElementById('pageTitle').textContent = 'Kompilacja macOS gotowa';
                 platformLogos.macos.style.display = 'block';
                 platformNote.textContent = 'Aplikacja macOS może wymagać dodatkowego przygotowania przed dystrybucją.';
                 platformNote.style.display = 'block';
             } else if (platform === 'windows' || platform === 'windows-x86') {
-                document.getElementById('pageTitle').textContent = 'Build Windows gotowy';
+                document.getElementById('pageTitle').textContent = 'Kompilacja Windows gotowa';
                 platformLogos.windows.style.display = 'block';
                 platformNote.textContent = 'Instalatory są dostępne w chronionym Centrum pobierania.';
                 platformNote.style.display = 'block';
             } else if (platform === 'linux') {
-                document.getElementById('pageTitle').textContent = 'Build Linux gotowy';
+                document.getElementById('pageTitle').textContent = 'Kompilacja Linux gotowa';
                 platformLogos.linux.style.display = 'block';
                 platformNote.textContent = 'Przed wdrożeniem sprawdź zależności wymagane przez wybraną dystrybucję.';
                 platformNote.style.display = 'block';
             } else if (platform === 'android') {
-                document.getElementById('pageTitle').textContent = 'Build Android gotowy';
+                document.getElementById('pageTitle').textContent = 'Kompilacja Android gotowa';
                 platformLogos.android.style.display = 'block';
                 platformNote.textContent = 'Sposób instalacji zależy od przyjętego kanału dystrybucji Android.';
                 platformNote.style.display = 'block';

@@ -482,7 +482,11 @@ def generate_custom_client(params, full_url):
     advanced_target = decodedCustom[
         'default-settings' if permissionsDorO == 'default' else 'override-settings'
     ]
-    apply_advanced_settings(advanced_target, params)
+    apply_advanced_settings(
+        advanced_target,
+        params,
+        default_target=decodedCustom['default-settings'],
+    )
 
     if defaultManual:
         for line in defaultManual.splitlines():

@@ -206,17 +206,17 @@
 
             // Set appropriate logo and title
             if (platform === 'macos') {
-                document.getElementById('pageTitle').textContent = 'Generating MacOS Build';
+                document.getElementById('pageTitle').textContent = 'Budowanie klienta macOS';
                 platformLogos.macos.style.display = 'block';
                 document.getElementById('macosNote').style.display = 'block';
             } else if (platform === 'windows' || platform === 'windows-x86') {
                 document.getElementById('pageTitle').textContent = 'Budowanie klienta Windows';
                 platformLogos.windows.style.display = 'block';
             } else if (platform === 'linux') {
-                document.getElementById('pageTitle').textContent = 'Generating Linux Build';
+                document.getElementById('pageTitle').textContent = 'Budowanie klienta Linux';
                 platformLogos.linux.style.display = 'block';
             } else if (platform === 'android') {
-                document.getElementById('pageTitle').textContent = 'Generating Android Build';
+                document.getElementById('pageTitle').textContent = 'Budowanie klienta Android';
                 platformLogos.android.style.display = 'block';
             }
         }
@@ -227,11 +227,11 @@
             const statusText = document.getElementById('statusText');
             let progress = 0;
             const stages = [
-                'Initializing build process',
-                'Compiling source code',
-                'Generating platform-specific binaries',
-                'Packaging application',
-                'Finalizing build'
+                'Inicjowanie procesu budowania',
+                'Kompilowanie kodu źródłowego',
+                'Tworzenie plików dla wybranej platformy',
+                'Pakowanie aplikacji',
+                'Finalizowanie kompilacji'
             ];
 
             const progressInterval = setInterval(() => {

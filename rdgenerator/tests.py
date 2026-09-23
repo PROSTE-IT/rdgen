@@ -14,6 +14,7 @@ from django.test import Client, SimpleTestCase, TestCase, override_settings
 from .api_views import validate_generate_params
 from .forms import GenerateForm
 from .models import GithubRun
+from .settings_catalog import ADVANCED_SETTINGS, apply_advanced_settings
 from .views import (
     _get_run_status,
     allocate_pit_version,
@@ -305,6 +306,72 @@ class GeneratorConfigurationPageTests(SimpleTestCase):
         self.assertContains(response, 'suggestedName: configurationFilename')
         self.assertContains(response, 'await saveHandle.createWritable()')
         self.assertContains(response, 'a.download = configurationFilename')
+
+    def test_generator_exposes_polish_advanced_settings_catalog(self):
+        response = self.client.get('/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'Katalog ustawień zaawansowanych RustDesk 1.4.9',
+        )
+        self.assertContains(response, 'id="advancedSettingsSearch"')
+        self.assertContains(response, 'show-remote-cursor')
+        self.assertContains(response, 'disable-audio')
+        self.assertContains(response, 'Pokazuj zdalny kursor')
+
+
+class AdvancedSettingsCatalogTests(SimpleTestCase):
+    def test_catalog_covers_documented_settings_and_is_added_to_form(self):
+        self.assertGreaterEqual(len(ADVANCED_SETTINGS), 80)
+        fields = [setting['field'] for setting in ADVANCED_SETTINGS]
+        keys = [setting['key'] for setting in ADVANCED_SETTINGS]
+        self.assertEqual(len(fields), len(set(fields)))
+        self.assertEqual(len(keys), len(set(keys)))
+        form = GenerateForm()
+        self.assertIn('adv_show_remote_cursor', form.fields)
+        self.assertIn('adv_disable_audio', form.fields)
+        self.assertIn('adv_lang', form.fields)
+
+    def test_only_explicit_catalog_values_are_written(self):
+        target = {}
+
+        apply_advanced_settings(target, {
+            'adv_show_remote_cursor': True,
+            'adv_disable_audio': False,
+            'adv_disable_udp_punch': True,
+            'adv_image_quality': 'balanced',
+            'adv_custom_fps': 30,
+        })
+
+        self.assertEqual(target['show-remote-cursor'], 'Y')
+        self.assertNotIn('disable-audio', target)
+        self.assertEqual(target['enable-udp-punch'], 'N')
+        self.assertEqual(target['image-quality'], 'balanced')
+        self.assertEqual(target['custom-fps'], '30')
+
+    def test_api_validates_advanced_numeric_ranges(self):
+        data = SupportAddressBookValidationTests().form_data(
+            supportAddressBook=False,
+            adv_custom_fps=121,
+        )
+
+        _, errors = validate_generate_params(data)
+
+        self.assertIn('adv_custom_fps', errors)
+
+    def test_default_only_mobile_controls_do_not_enter_override_layer(self):
+        override_target = {}
+        default_target = {}
+
+        apply_advanced_settings(
+            override_target,
+            {'adv_show_virtual_mouse': True},
+            default_target=default_target,
+        )
+
+        self.assertNotIn('show-virtual-mouse', override_target)
+        self.assertEqual(default_target['show-virtual-mouse'], 'Y')
 
 
 class SelfHostedRunnerSelectionTests(SimpleTestCase):

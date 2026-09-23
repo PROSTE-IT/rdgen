@@ -63,7 +63,7 @@ def validate_generate_params(data):
     # Required string field
     exename = data.get('exename', '')
     if not exename:
-        errors['exename'] = 'This field is required.'
+        errors['exename'] = 'To pole jest wymagane.'
     else:
         cleaned['exename'] = exename
 
@@ -84,7 +84,7 @@ def validate_generate_params(data):
     for field, (choices, default) in choice_validations.items():
         value = data.get(field, default)
         if value not in choices:
-            errors[field] = f'Invalid choice. Must be one of: {choices}'
+            errors[field] = f'Nieprawidłowy wybór. Dozwolone wartości: {choices}'
         else:
             cleaned[field] = value
 
@@ -92,7 +92,7 @@ def validate_generate_params(data):
     for field in BOOL_FIELDS:
         value = data.get(field, False)
         if not isinstance(value, bool):
-            errors[field] = 'Must be a boolean value.'
+            errors[field] = 'Wartość musi być logiczna (true/false).'
         else:
             cleaned[field] = value
 
@@ -144,9 +144,9 @@ def validate_generate_params(data):
 
     if cleaned.get('buildProfile') == 'quick_support':
         if cleaned.get('platform') != 'windows':
-            errors['platform'] = 'Quick Support requires Windows 64Bit.'
+            errors['platform'] = 'Quick Support wymaga Windows 64-bit.'
         if cleaned.get('version') != '1.4.9':
-            errors['version'] = 'Quick Support requires RustDesk 1.4.9.'
+            errors['version'] = 'Quick Support wymaga RustDesk 1.4.9.'
         cleaned.update({
             'direction': 'incoming',
             'installation': 'installationY',
@@ -159,19 +159,19 @@ def validate_generate_params(data):
 
     if cleaned.get('supportAddressBook'):
         if cleaned.get('platform') != 'windows':
-            errors['platform'] = 'Shared address book requires Windows 64Bit.'
+            errors['platform'] = 'Integracja RDBK wymaga Windows 64-bit.'
         if cleaned.get('version') != '1.4.9':
-            errors['version'] = 'Shared address book requires RustDesk 1.4.9.'
+            errors['version'] = 'Integracja RDBK wymaga RustDesk 1.4.9.'
         if not cleaned.get('supportAddressBookUrl'):
-            errors['supportAddressBookUrl'] = 'This field is required when shared address book is enabled.'
+            errors['supportAddressBookUrl'] = 'Adres API jest wymagany po włączeniu integracji RDBK.'
         if cleaned.get('direction') == 'incoming':
             if not str(cleaned.get('permanentPassword') or '').strip():
                 errors['permanentPassword'] = (
-                    'Windows Helpdesk requires a permanent password for unattended access.'
+                    'Windows Helpdesk wymaga stałego hasła do dostępu nienadzorowanego.'
                 )
             if cleaned.get('passApproveMode') == 'click':
                 errors['passApproveMode'] = (
-                    'Windows Helpdesk must allow password authentication.'
+                    'Windows Helpdesk musi zezwalać na uwierzytelnianie hasłem.'
                 )
 
     # File fields are not used in API mode (base64 fields are used instead)
@@ -193,18 +193,18 @@ def api_generate(request):
     Returns JSON with success status, uuid, filename, platform, and log_url.
     """
     if request.method != 'POST':
-        return JsonResponse({"success": False, "error": "Method not allowed. Use POST."}, status=405)
+        return JsonResponse({"success": False, "error": "Niedozwolona metoda. Użyj POST."}, status=405)
 
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError) as e:
-        return JsonResponse({"success": False, "error": f"Invalid JSON: {str(e)}"}, status=400)
+        return JsonResponse({"success": False, "error": f"Nieprawidłowy JSON: {str(e)}"}, status=400)
 
     cleaned, errors = validate_generate_params(data)
     if errors:
         return JsonResponse({
             "success": False,
-            "error": "Validation errors",
+            "error": "Błędy walidacji",
             "details": errors
         }, status=400)
 
