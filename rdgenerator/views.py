@@ -22,6 +22,7 @@ from django.db import transaction
 from django.db.models import F, Q
 from .forms import GenerateForm
 from .models import BuildVersionSequence, GithubRun
+from .settings_catalog import apply_advanced_settings
 from PIL import Image
 from urllib.parse import quote
 
@@ -477,6 +478,11 @@ def generate_custom_client(params, full_url):
         if direction == 'incoming':
             decodedCustom['override-settings']['custom-rendezvous-server'] = server
             decodedCustom['override-settings']['api-server'] = apiServer
+
+    advanced_target = decodedCustom[
+        'default-settings' if permissionsDorO == 'default' else 'override-settings'
+    ]
+    apply_advanced_settings(advanced_target, params)
 
     if defaultManual:
         for line in defaultManual.splitlines():

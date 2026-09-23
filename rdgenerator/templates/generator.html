@@ -292,8 +292,8 @@
                     <i class="fab fa-apple platform-icon" data-platform="macos"></i>
                 </div>
                 <select name="platform" id="id_platform">
-                    <option value="windows" selected>Windows 64Bit</option>
-                    <option value="windows-x86">Windows 32Bit</option>
+                    <option value="windows" selected>Windows 64-bit</option>
+                    <option value="windows-x86">Windows 32-bit</option>
                     <option value="linux">Linux</option>
                     <option value="android">Android</option>
                     <option value="macos">macOS</option>
@@ -304,15 +304,15 @@
                     <span class="help-text">{{ form.version.help_text }}</span>
                 {% endif %}
                 <div class="help-text">{{ form.version.help_text }}</div>
-                <label for="{{ form.delayFix.id_for_label }}">{{ form.delayFix }} Fix connection delay when using third-party API</label>
+                <label for="{{ form.delayFix.id_for_label }}">{{ form.delayFix }} Napraw opóźnienie połączenia przy zewnętrznym API</label>
             </div>
         </div>
         <div class="container">   
             <div class="section">
                 <h2><i class="fas fa-sliders-h"></i> Podstawowe</h2>
-                    <label for="{{ form.exename.id_for_label }}">Name of the configuration (no spaces or special characters, English characters only):</label>
+                    <label for="{{ form.exename.id_for_label }}">Nazwa konfiguracji (bez spacji i znaków specjalnych, tylko znaki ASCII):</label>
                     {{ form.exename }}<span id="filenameError" class="error"></span><br><br>
-                    <label for="{{ form.appname.id_for_label }}">Custom Application Name (leave blank to use default):</label>
+                    <label for="{{ form.appname.id_for_label }}">Niestandardowa nazwa aplikacji (pozostaw puste, aby użyć domyślnej):</label>
                     {{ form.appname }}<br><br>
                     <label for="{{ form.buildProfile.id_for_label }}">Profil aplikacji:</label>
                     {{ form.buildProfile }}
@@ -324,17 +324,17 @@
                         zawiera stałego hasła ani książki technika RDBK. Hasło dostępu
                         nienadzorowanego musi być zapisane w bieżącym pakiecie Windows Helpdesk.
                     </p><br>
-                    <label for="{{ form.supportAddressBook.id_for_label }}">{{ form.supportAddressBook }} Enable PROSTE IT RDBK backend integration</label><br>
-                    <label for="{{ form.supportAddressBookUrl.id_for_label }}">RDBK backend API URL:</label>
+                    <label for="{{ form.supportAddressBook.id_for_label }}">{{ form.supportAddressBook }} Włącz integrację z backendem PROSTE IT RDBK</label><br>
+                    <label for="{{ form.supportAddressBookUrl.id_for_label }}">Adres URL API backendu RDBK:</label>
                     {{ form.supportAddressBookUrl }}
-                    <span class="help-text">Backend URL for PROSTE IT Windows Support and Windows Helpdesk builds. Quick Support uses it automatically. Requires Windows 64Bit and RustDesk 1.4.9.</span><br><br>
-                    <label for="{{ form.direction.id_for_label }}">Connection Type:</label>
+                    <span class="help-text">Adres backendu dla aplikacji PROSTE IT Windows Support i Windows Helpdesk. Quick Support używa go automatycznie. Integracja wymaga Windows 64-bit i RustDesk 1.4.9.</span><br><br>
+                    <label for="{{ form.direction.id_for_label }}">Kierunek połączeń:</label>
                     {{ form.direction }}<br><br>
-                    <label for="{{ form.installation.id_for_label }}">Disable Installation:</label>
+                    <label for="{{ form.installation.id_for_label }}">Wyłączyć możliwość instalacji?</label>
                     {{ form.installation }}<br><br>
-                    <label for="{{ form.settings.id_for_label }}">Disable Settings:</label>
+                    <label for="{{ form.settings.id_for_label }}">Wyłączyć panel ustawień?</label>
                     {{ form.settings }}<br><br>
-                    <label for="{{ form.androidappid.id_for_label }}">Custom Android App ID (replaces 'com.carriez.flutter_hbb', leave blank to use default):</label>
+                    <label for="{{ form.androidappid.id_for_label }}">Niestandardowy identyfikator aplikacji Android (zastępuje „com.carriez.flutter_hbb”; pozostaw puste, aby użyć domyślnego):</label>
                     {{ form.androidappid }}<br><br>
             </div>
 
@@ -344,30 +344,30 @@
                     {{ form.serverIP }}<br><br>
                     <label for="{{ form.serverPort.id_for_label }}">Port:</label>
                     {{ form.serverPort }}<br><br>
-                    <label for="{{ form.key.id_for_label }}">Key:</label>
+                    <label for="{{ form.key.id_for_label }}">Klucz publiczny:</label>
                     {{ form.key }}<br><br>
                     <label for="{{ form.apiServer.id_for_label }}">API:</label>
                     {{ form.apiServer }}<br><br>
-                    <label for="{{ form.urlLink.id_for_label }}">Custom URL for links (replaces https://rustdesk.com):</label>
+                    <label for="{{ form.urlLink.id_for_label }}">Niestandardowy adres odnośników (zastępuje https://rustdesk.com):</label>
                     {{ form.urlLink }}<br><br>
-                    <label for="{{ form.downloadLink.id_for_label }}">Custom URL for downloading updates (replaces https://rustdesk.com/download):</label>
+                    <label for="{{ form.downloadLink.id_for_label }}">Niestandardowy adres pobierania aktualizacji (zastępuje https://rustdesk.com/download):</label>
                     {{ form.downloadLink }}<br><br>
-                    <label for="{{ form.compname.id_for_label }}">Company name for copyright (replaces Purslane Tech Pte. Ltd.):</label>
+                    <label for="{{ form.compname.id_for_label }}">Nazwa firmy w informacji o prawach autorskich (zastępuje Purslane Tech Pte. Ltd.):</label>
                     {{ form.compname }}<br><br>
             </div>
         </div>
         <div class="container">
             <div class="section">
                 <h2><i class="fas fa-shield-alt"></i> Bezpieczeństwo</h2>
-                    <label for="{{ form.passApproveMode.id_for_label }}">Password Approve mode:</label>
+                    <label for="{{ form.passApproveMode.id_for_label }}">Sposób akceptowania połączeń:</label>
                     {{ form.passApproveMode }}
                     {% if form.passApproveMode.errors %}
                         <ul class="errorlist">
                             {% for error in form.passApproveMode.errors %}<li>{{ error }}</li>{% endfor %}
                         </ul>
                     {% endif %}<br><br>
-                    <div id="passwordRequirement" class="password-requirement">To use the hide connection window feature, please set a permanent password.</div>
-                    <label for="{{ form.permanentPassword.id_for_label }}">Set Permanent Password:</label>
+                    <div id="passwordRequirement" class="password-requirement">Aby ukrywać okno połączenia na zdalnym ekranie, ustaw stałe hasło.</div>
+                    <label for="{{ form.permanentPassword.id_for_label }}">Stałe hasło:</label>
                     {{ form.permanentPassword }}
                     {% if form.permanentPassword.errors %}
                         <ul class="errorlist">
@@ -378,16 +378,16 @@
                         Wymagane dla Windows Helpdesk. To hasło będzie działało po instalacji
                         jako dostęp nienadzorowany.
                     </span>
-                    *The password is used as default, but can be changed by the client<br><br>
+                    <span class="help-text">Hasło jest wartością domyślną, ale użytkownik klienta może je później zmienić, o ile nie zablokujesz tej możliwości.</span>
                     
                     
-                    <label for="{{ form.denyLan.id_for_label }}">{{ form.denyLan }} Deny LAN discovery</label><br>
+                    <label for="{{ form.denyLan.id_for_label }}">{{ form.denyLan }} Zablokuj wykrywanie w sieci LAN</label><br>
                     
-                    <label for="{{ form.enableDirectIP.id_for_label }}">{{ form.enableDirectIP }} Enable direct IP access</label><br>
+                    <label for="{{ form.enableDirectIP.id_for_label }}">{{ form.enableDirectIP }} Włącz bezpośredni dostęp po adresie IP</label><br>
                     
-                    <label for="{{ form.autoClose.id_for_label }}">{{ form.autoClose }} Automatically close incoming sessions on user inactivity</label><br>
+                    <label for="{{ form.autoClose.id_for_label }}">{{ form.autoClose }} Automatycznie zamykaj sesje przychodzące po bezczynności użytkownika</label><br>
 
-                    <label for="{{ form.hidecm.id_for_label }}">{{ form.hidecm }} Allow hiding the connection window from remote screen.</label><br>
+                    <label for="{{ form.hidecm.id_for_label }}">{{ form.hidecm }} Zezwól na ukrycie okna połączenia na zdalnym ekranie</label><br>
             </div>
         
             <div class="section">
@@ -395,56 +395,108 @@
                     {{ form.iconbase64.as_hidden }}
                     {{ form.logobase64.as_hidden }}
                     {{ form.privacybase64.as_hidden }}
-                    <label for="{{ form.iconfile.id_for_label }}">Custom App Icon (in .png format)</label>
+                    <label for="{{ form.iconfile.id_for_label }}">Niestandardowa ikona aplikacji (PNG)</label>
                     {{ form.iconfile }}<br><br>
                     <!-- <input type="file" name="iconfile" id="iconfile" accept="image/png"> -->
                     <div id="icon-preview"></div><br><br>
-                    <label for="{{ form.logofile.id_for_label }}">Custom App Logo (in .png format)</label>
+                    <label for="{{ form.logofile.id_for_label }}">Niestandardowe logo aplikacji (PNG)</label>
                     {{ form.logofile }}<br><br>
                     <!-- <input type="file" name="logofile" id="logofile" accept="image/png"> -->
                     <div id="logo-preview"></div><br><br>
-                    <label for="{{ form.privacyfile.id_for_label }}">Custom Privacy Screen (in .png format)</label>
+                    <label for="{{ form.privacyfile.id_for_label }}">Niestandardowy ekran prywatności (PNG)</label>
                     {{ form.privacyfile }}<br><br>
                     <!-- <input type="file" name="iconfile" id="iconfile" accept="image/png"> -->
                     <div id="privacy-preview"></div><br><br>
-                    <label for="{{ form.theme.id_for_label }}">Theme:</label>
-                    {{ form.theme }} {{ form.themeDorO }} *Default sets the theme but allows the client to change it, Override sets the theme permanently.<br><br>
+                    <label for="{{ form.theme.id_for_label }}">Motyw:</label>
+                    {{ form.theme }} {{ form.themeDorO }}
+                    <span class="help-text">„Domyślne” ustawia motyw początkowy i pozwala go zmienić. „Wymuszone” blokuje wybrany motyw.</span>
             </div>
         </div>
         <div class="container">
             <div class="section">
                 <h2><i class="fas fa-lock"></i> Uprawnienia</h2>
-                    The following Permissions can be set as default (the user can change the settings) or override (the settings cannot be changed).<br>
+                    <p class="rdgen-section-intro">Wybierz warstwę dla uprawnień oraz katalogu ustawień zaawansowanych. Ustawienia domyślne użytkownik może zmienić, a wymuszone mają najwyższy priorytet.</p>
                     {{ form.permissionsDorO }}
-                    <label for="{{ form.permissionsType.id_for_label }}">Permission type:</label>
+                    <label for="{{ form.permissionsType.id_for_label }}">Zakres uprawnień:</label>
                     {{ form.permissionsType }}<br><br>
                     <div class="checkbox-group">
-                        <label for="{{ form.enableKeyboard.id_for_label }}">{{ form.enableKeyboard }} Enable keyboard/mouse</label>
-                        <label for="{{ form.enableClipboard.id_for_label }}">{{ form.enableClipboard }} Enable clipboard</label>
-                        <label for="{{ form.enableFileTransfer.id_for_label }}">{{ form.enableFileTransfer }} Enable file transfer</label>
-                        <label for="{{ form.enableAudio.id_for_label }}">{{ form.enableAudio }} Enable audio</label>
-                        <label for="{{ form.enableTCP.id_for_label }}">{{ form.enableTCP }} Enable TCP tunneling</label>
-                        <label for="{{ form.enableRemoteRestart.id_for_label }}">{{ form.enableRemoteRestart }} Enable remote restart</label>
-                        <label for="{{ form.enableRecording.id_for_label }}">{{ form.enableRecording }} Enable recording session</label>
-                        <label for="{{ form.enableBlockingInput.id_for_label }}">{{ form.enableBlockingInput }} Enable blocking user input</label>
-                        <label for="{{ form.enableRemoteModi.id_for_label }}">{{ form.enableRemoteModi }} Enable remote configuration modification</label>
-                        <label for="{{ form.enablePrinter.id_for_label }}">{{ form.enablePrinter }} Enable remote printer</label>
-                        <label for="{{ form.enableCamera.id_for_label }}">{{ form.enableCamera }} Enable remote camera</label>
-                        <label for="{{ form.enableTerminal.id_for_label }}">{{ form.enableTerminal }} Enable remote terminal</label>
+                        <label for="{{ form.enableKeyboard.id_for_label }}">{{ form.enableKeyboard }} Klawiatura i mysz</label>
+                        <label for="{{ form.enableClipboard.id_for_label }}">{{ form.enableClipboard }} Schowek tekstowy</label>
+                        <label for="{{ form.enableFileTransfer.id_for_label }}">{{ form.enableFileTransfer }} Transfer plików</label>
+                        <label for="{{ form.enableAudio.id_for_label }}">{{ form.enableAudio }} Dźwięk</label>
+                        <label for="{{ form.enableTCP.id_for_label }}">{{ form.enableTCP }} Tunelowanie TCP</label>
+                        <label for="{{ form.enableRemoteRestart.id_for_label }}">{{ form.enableRemoteRestart }} Zdalny restart</label>
+                        <label for="{{ form.enableRecording.id_for_label }}">{{ form.enableRecording }} Nagrywanie sesji</label>
+                        <label for="{{ form.enableBlockingInput.id_for_label }}">{{ form.enableBlockingInput }} Blokowanie wejścia użytkownika</label>
+                        <label for="{{ form.enableRemoteModi.id_for_label }}">{{ form.enableRemoteModi }} Zdalna zmiana konfiguracji</label>
+                        <label for="{{ form.enablePrinter.id_for_label }}">{{ form.enablePrinter }} Drukarka zdalna</label>
+                        <label for="{{ form.enableCamera.id_for_label }}">{{ form.enableCamera }} Kamera zdalna</label>
+                        <label for="{{ form.enableTerminal.id_for_label }}">{{ form.enableTerminal }} Terminal zdalny</label>
                     </div><br>
                 <h2><i class="fas fa-code"></i> Modyfikacje klienta</h2>
-                    <label for="{{ form.xOffline.id_for_label }}">{{ form.xOffline }} Display an X for offline devices in the addressbook.</label><br>
-                    <label for="{{ form.removeNewVersionNotif.id_for_label }}">{{ form.removeNewVersionNotif }} Remove notification for new versions.</label><br>
+                    <label for="{{ form.xOffline.id_for_label }}">{{ form.xOffline }} Pokazuj znak X przy urządzeniach offline w książce adresowej</label><br>
+                    <label for="{{ form.removeNewVersionNotif.id_for_label }}">{{ form.removeNewVersionNotif }} Usuń powiadomienie o nowej wersji</label><br>
             </div>
 
             <div class="section">
                 <h2><i class="fas fa-cog"></i> Pozostałe</h2>
-                    <label for="{{ form.removeWallpaper.id_for_label }}">{{ form.removeWallpaper }} Remove wallpaper during incoming sessions</label><br>
-                    <a href="https://rustdesk.com/docs/en/self-host/client-configuration/advanced-settings/">Click here for a list of Default/Override settings</a>
-                    <label for="{{ form.defaultManual.id_for_label }}">Default settings</label><br>
-                    {{ form.defaultManual }}<br><br>
-                    <label for="{{ form.overrideManual.id_for_label }}">Override settings</label><br>
-                    {{ form.overrideManual }}<br><br>
+                    <label for="{{ form.removeWallpaper.id_for_label }}">{{ form.removeWallpaper }} Usuwaj tapetę podczas sesji przychodzących</label><br>
+                    <span class="help-text">To szybkie ustawienie zapisuje <code>allow-remove-wallpaper=Y/N</code> w warstwie wybranej w sekcji „Uprawnienia”.</span>
+            </div>
+        </div>
+
+        <div class="platform rdgen-advanced-catalog">
+            <div class="section">
+                <h2><i class="fas fa-list-check"></i> Katalog ustawień zaawansowanych RustDesk 1.4.9</h2>
+                <p class="rdgen-section-intro">
+                    Zaznaczony checkbox dodaje opisaną opcję do konfiguracji. Niezaznaczony
+                    oznacza „nie ustawiaj” i zachowuje wartość domyślną RustDesk. Pola list i
+                    wartości liczbowe również mają opcję „Nie ustawiaj”. Wszystko trafia do
+                    warstwy wybranej w sekcji „Uprawnienia”.
+                </p>
+                <label for="advancedSettingsSearch">Szukaj po nazwie lub kluczu ustawienia:</label>
+                <input id="advancedSettingsSearch" type="search" placeholder="np. kursor, dźwięk, show-remote-cursor">
+                <div id="advancedSettingsEmpty" class="rdgen-empty-state" hidden>Nie znaleziono pasujących ustawień.</div>
+                {% for group in form.advanced_setting_groups %}
+                    <details class="rdgen-advanced-group" data-advanced-group {% if forloop.first %}open{% endif %}>
+                        <summary>{{ group.label }} <span>{{ group.settings|length }}</span></summary>
+                        <div class="rdgen-advanced-grid">
+                            {% for setting in group.settings %}
+                                <div class="rdgen-advanced-setting" data-advanced-setting data-search="{{ setting.search|lower }}">
+                                    {% if setting.kind == 'boolean' %}
+                                        <label for="{{ setting.field.id_for_label }}" class="rdgen-advanced-checkbox">
+                                            {{ setting.field }}
+                                            <span>{{ setting.field.label }}</span>
+                                        </label>
+                                    {% else %}
+                                        <label for="{{ setting.field.id_for_label }}">{{ setting.field.label }}</label>
+                                        {{ setting.field }}
+                                    {% endif %}
+                                    <code>{{ setting.key }}</code>
+                                    {% if setting.field.help_text %}<small>{{ setting.field.help_text }}</small>{% endif %}
+                                    {% if setting.field.errors %}{{ setting.field.errors }}{% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </details>
+                {% endfor %}
+                <p class="rdgen-catalog-source">
+                    Katalog odwzorowuje opcje udokumentowane dla klienta RustDesk 1.4.9.
+                    <a href="https://rustdesk.com/docs/en/self-host/client-configuration/advanced-settings/" target="_blank" rel="noopener">Otwórz dokumentację RustDesk ↗</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="platform">
+            <div class="section">
+                <details class="rdgen-manual-settings">
+                    <summary><i class="fas fa-code"></i> Tryb ekspercki — ustawienia wpisywane ręcznie</summary>
+                    <p class="rdgen-section-intro">Wpisuj po jednej parze <code>klucz=wartość</code> w wierszu. Wartości ręczne mają pierwszeństwo przed kontrolkami katalogu.</p>
+                    <label for="{{ form.defaultManual.id_for_label }}">Ustawienia domyślne</label>
+                    {{ form.defaultManual }}
+                    <label for="{{ form.overrideManual.id_for_label }}">Ustawienia wymuszone</label>
+                    {{ form.overrideManual }}
+                </details>
             </div>
         </div>
         <div class="platform rdgen-submit-row">
@@ -568,7 +620,7 @@
                 enableRemoteModi.disabled = true;
                 enablePrinter.disabled = true;
                 enableCamera.disabled = true;
-                enableTerminal.disable = true;
+                enableTerminal.disabled = true;
             } else if (this.value === 'view') {
                 enableKeyboard.checked = false;
                 enableClipboard.checked = false;
@@ -594,7 +646,7 @@
                 enableRemoteModi.disabled = true;
                 enablePrinter.disabled = true;
                 enableCamera.disabled = true;
-                enableTerminal.disable = true;
+                enableTerminal.disabled = true;
             } else if (this.value === 'custom') {
                 enableKeyboard.disabled = false;
                 enableClipboard.disabled = false;
@@ -605,10 +657,33 @@
                 enableRecording.disabled = false;
                 enableBlockingInput.disabled = false;
                 enableRemoteModi.disabled = false;
-                enablePrinter.checked = false;
-                enableCamera.checked = false;
-                enableTerminal.checked = false;
+                enablePrinter.disabled = false;
+                enableCamera.disabled = false;
+                enableTerminal.disabled = false;
             }
+        });
+
+        const advancedSettingsSearch = document.getElementById('advancedSettingsSearch');
+        const advancedSettingsEmpty = document.getElementById('advancedSettingsEmpty');
+        advancedSettingsSearch.addEventListener('input', function() {
+            const query = this.value.trim().toLocaleLowerCase('pl');
+            let visibleCount = 0;
+            document.querySelectorAll('[data-advanced-group]').forEach(group => {
+                let groupMatches = 0;
+                group.querySelectorAll('[data-advanced-setting]').forEach(setting => {
+                    const matches = !query || setting.dataset.search.includes(query);
+                    setting.hidden = !matches;
+                    if (matches) {
+                        groupMatches += 1;
+                        visibleCount += 1;
+                    }
+                });
+                group.hidden = groupMatches === 0;
+                if (query && groupMatches > 0) {
+                    group.open = true;
+                }
+            });
+            advancedSettingsEmpty.hidden = visibleCount !== 0;
         });
         function previewImage(input, previewContainerId) {
             if (input.files && input.files[0]) {
@@ -655,7 +730,7 @@
         async function saveFormData() {
             const filename = document.getElementById("{{ form.exename.id_for_label }}").value;
             if (!filename) {
-                document.getElementById("filenameError").textContent = "Filename is required.";
+                document.getElementById("filenameError").textContent = "Nazwa konfiguracji jest wymagana.";
                 return;
             } else {
                 document.getElementById("filenameError").textContent = "";
@@ -683,7 +758,7 @@
                     // Browsers can expose the API while blocking it outside a
                     // secure/top-level context. Keep the existing download as
                     // a compatibility fallback in that case.
-                    console.warn("Native configuration save dialog is unavailable.", error);
+                    console.warn("Natywne okno zapisu konfiguracji jest niedostępne.", error);
                 }
             }
 
@@ -773,7 +848,7 @@
                     await writable.write(blob);
                     await writable.close();
                 } catch (error) {
-                    console.error("Unable to save the RDGen configuration.", error);
+                    console.error("Nie udało się zapisać konfiguracji RDGen.", error);
                     alert("Nie udało się zapisać konfiguracji w wybranym miejscu.");
                 }
                 return;
@@ -877,7 +952,7 @@
                 const form = document.getElementById('myForm');
                 form.parentNode.insertBefore(banner, form);
             }
-            banner.textContent = 'Warning: ignored invalid (non-text) values for: ' + keys.join(', ') + '. They were dropped.';
+            banner.textContent = 'Ostrzeżenie: pominięto nieprawidłowe wartości dla pól: ' + keys.join(', ') + '.';
         }
 
         function loadFormData() {
@@ -959,7 +1034,7 @@
                                 schemaVersion < RDGEN_CONFIG_SCHEMA_VERSION || !profileIsExplicit
                             );
                         } catch (error) {
-                            alert("Error loading data. Invalid JSON file.");
+                            alert("Nie udało się wczytać danych. Plik JSON jest nieprawidłowy.");
                         }
                     };
                     reader.readAsText(file);

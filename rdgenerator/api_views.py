@@ -6,6 +6,7 @@ from django.conf import settings as _settings
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from .models import GithubRun
+from .settings_catalog import ADVANCED_BOOLEAN_FIELDS, ADVANCED_VALUE_SETTINGS
 from .views import (
     _artifact_path,
     _available_builds,
@@ -37,7 +38,7 @@ BOOL_FIELDS = [
     'enableKeyboard', 'enableClipboard', 'enableFileTransfer', 'enableAudio',
     'enableTCP', 'enableRemoteRestart', 'enableRecording', 'enableBlockingInput',
     'enableRemoteModi', 'removeWallpaper', 'enablePrinter', 'enableCamera', 'enableTerminal',
-]
+] + ADVANCED_BOOLEAN_FIELDS
 
 # Optional string fields (no validation needed, just accept as-is)
 OPTIONAL_STR_FIELDS = [
@@ -98,6 +99,38 @@ def validate_generate_params(data):
     # Optional string fields
     for field in OPTIONAL_STR_FIELDS:
         cleaned[field] = data.get(field, '')
+
+    # Data-driven RustDesk advanced settings catalog.
+    for setting in ADVANCED_VALUE_SETTINGS:
+        field = setting['field']
+        value = data.get(field, '')
+        if value in (None, ''):
+            cleaned[field] = ''
+            continue
+        if setting['kind'] == 'choice':
+            allowed = [choice[0] for choice in setting['choices']]
+            if value not in allowed:
+                errors[field] = f'Nieprawidłowa wartość. Dozwolone: {allowed}'
+            else:
+                cleaned[field] = value
+        elif setting['kind'] == 'number':
+            try:
+                parsed = int(value)
+            except (TypeError, ValueError):
+                errors[field] = 'Wartość musi być liczbą całkowitą.'
+                continue
+            minimum = setting.get('min')
+            maximum = setting.get('max')
+            if minimum is not None and parsed < minimum:
+                errors[field] = f'Minimalna wartość to {minimum}.'
+            elif maximum is not None and parsed > maximum:
+                errors[field] = f'Maksymalna wartość to {maximum}.'
+            else:
+                cleaned[field] = parsed
+        elif not isinstance(value, str):
+            errors[field] = 'Wartość musi być tekstem.'
+        else:
+            cleaned[field] = value
 
     # Free-text names flow into single/double-quoted bash sed scripts
     # (same rule as GenerateForm.clean_appname/clean_compname).
