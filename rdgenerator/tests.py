@@ -297,6 +297,15 @@ class GeneratorConfigurationPageTests(SimpleTestCase):
         self.assertContains(response, 'data-legacy-profile="quick_support"')
         self.assertContains(response, 'RDGEN_CONFIG_SCHEMA_VERSION = 2')
 
+    def test_configuration_save_uses_native_dialog_with_download_fallback(self):
+        response = self.client.get('/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'window.showSaveFilePicker')
+        self.assertContains(response, 'suggestedName: configurationFilename')
+        self.assertContains(response, 'await saveHandle.createWritable()')
+        self.assertContains(response, 'a.download = configurationFilename')
+
 
 class SelfHostedRunnerSelectionTests(SimpleTestCase):
     @override_settings(SH_SECRET='')

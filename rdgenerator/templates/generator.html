@@ -661,6 +661,32 @@
                 document.getElementById("filenameError").textContent = "";
             }
 
+            const configurationFilename = filename + ".json";
+            let saveHandle = null;
+
+            // Open the native Save As dialog while the click still counts as
+            // a user gesture. Waiting for image conversion first would cause
+            // Chromium to reject showSaveFilePicker with a SecurityError.
+            if (typeof window.showSaveFilePicker === "function") {
+                try {
+                    saveHandle = await window.showSaveFilePicker({
+                        suggestedName: configurationFilename,
+                        types: [{
+                            description: "Konfiguracja RDGen",
+                            accept: { "application/json": [".json"] },
+                        }],
+                    });
+                } catch (error) {
+                    if (error.name === "AbortError") {
+                        return;
+                    }
+                    // Browsers can expose the API while blocking it outside a
+                    // secure/top-level context. Keep the existing download as
+                    // a compatibility fallback in that case.
+                    console.warn("Native configuration save dialog is unavailable.", error);
+                }
+            }
+
             const formData = {};
             const form = document.getElementById("myForm"); // Get the form element
 
@@ -740,11 +766,24 @@
 
             const jsonData = JSON.stringify(formData, null, 2);
             const blob = new Blob([jsonData], { type: "application/json" });
+
+            if (saveHandle) {
+                try {
+                    const writable = await saveHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                } catch (error) {
+                    console.error("Unable to save the RDGen configuration.", error);
+                    alert("Nie udało się zapisać konfiguracji w wybranym miejscu.");
+                }
+                return;
+            }
+
             const url = URL.createObjectURL(blob);
 
             const a = document.createElement("a");
             a.href = url;
-            a.download = filename + ".json";
+            a.download = configurationFilename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
