@@ -18,6 +18,7 @@ from .settings_catalog import ADVANCED_SETTINGS, apply_advanced_settings
 from .views import (
     _get_run_status,
     allocate_pit_version,
+    managed_host_agent_enabled,
     managed_update_channel,
     remove_new_version_notification,
     use_self_hosted_runner,
@@ -284,6 +285,11 @@ class SupportAddressBookValidationTests(SimpleTestCase):
             ),
             'windows_helpdesk',
         )
+
+    def test_only_helpdesk_channel_enables_background_host_agent(self):
+        self.assertTrue(managed_host_agent_enabled('windows_helpdesk'))
+        self.assertFalse(managed_host_agent_enabled('windows_support'))
+        self.assertFalse(managed_host_agent_enabled(''))
 
 
 class GeneratorConfigurationPageTests(SimpleTestCase):

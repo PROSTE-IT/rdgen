@@ -37,6 +37,11 @@
   * REPONAME="rdgen" *optional - defaults to "rdgen", change this if you renamed the repo when you forked it
   * RDGEN_UPLOAD_TOKEN="the same value as the GitHub Actions secret"
   * RDGEN_DASHBOARD_TOKEN="a different long random token shared only with RDBK"
+  * RDBK_HOST_REGISTRATION_SECRET="the same long random bootstrap secret as RDBK";
+    this is required for managed Windows Helpdesk builds and must not be stored
+    in Git
+  * RDBK_WINDOWS_SIGNER_SUBJECT="the expected Authenticode certificate subject";
+    strongly recommended once Artifact Signing is enabled
   * CSRF_TRUSTED_ORIGINS="https://rdgen.hostname.com" *optional - space- or
     comma-separated list used only when RDGen is published under more than one
     origin; otherwise `GENURL` is used automatically

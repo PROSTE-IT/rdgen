@@ -29,6 +29,14 @@ ZIP_PASSWORD = os.environ.get("ZIP_PASSWORD",'insecure')
 PROTOCOL = os.environ.get("PROTOCOL", 'https')
 REPONAME = os.environ.get("REPONAME", 'rdgen')
 SH_SECRET = os.environ.get('SH_SECRET', 'secret')
+RDBK_WINDOWS_SIGNER_SUBJECT = os.environ.get(
+    'RDBK_WINDOWS_SIGNER_SUBJECT',
+    '',
+).strip()
+RDBK_HOST_REGISTRATION_SECRET = os.environ.get(
+    'RDBK_HOST_REGISTRATION_SECRET',
+    '',
+).strip()
 RDGEN_DASHBOARD_TOKEN = os.environ.get('RDGEN_DASHBOARD_TOKEN', '')
 RDGEN_UPLOAD_TOKEN = os.environ.get('RDGEN_UPLOAD_TOKEN', '')
 RDBK_DOWNLOAD_CENTER_URL = os.environ.get(

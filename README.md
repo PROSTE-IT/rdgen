@@ -24,3 +24,11 @@ Save your configuration from the rdgen web interface, or generate your own, then
 - Avoid special characters or non-English characters in app name and file name
 - Build time is currently 30 - 45 minutes
 
+## PROSTE IT managed Helpdesk
+
+RDGen must receive `RDBK_HOST_REGISTRATION_SECRET` with the same long random
+value as RDBK before it can build Windows Helpdesk with the background host
+agent. Keep it only in deployment secrets; do not commit it. Production should
+also set `RDBK_WINDOWS_SIGNER_SUBJECT` to the expected Authenticode certificate
+subject after Artifact Signing is enabled.
+

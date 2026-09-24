@@ -23,6 +23,8 @@ services:
       EXE_TRASH_ROOT: "/opt/rdgen/artifact_trash"
       RDGEN_DASHBOARD_TOKEN: "${RDGEN_DASHBOARD_TOKEN}"
       RDGEN_UPLOAD_TOKEN: "${RDGEN_UPLOAD_TOKEN}"
+      RDBK_HOST_REGISTRATION_SECRET: "${RDBK_HOST_REGISTRATION_SECRET}"
+      RDBK_WINDOWS_SIGNER_SUBJECT: "${RDBK_WINDOWS_SIGNER_SUBJECT}"
       RDBK_DOWNLOAD_CENTER_URL: "https://rdbk-admin.prosteit.pl/admin/downloads/"
     ports:
       - "8000:8000"

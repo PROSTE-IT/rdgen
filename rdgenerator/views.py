@@ -233,6 +233,11 @@ def managed_update_channel(
     return 'windows_support'
 
 
+def managed_host_agent_enabled(update_channel):
+    """Only installed Helpdesk builds run the independent RDBK host agent."""
+    return update_channel == 'windows_helpdesk'
+
+
 def generate_custom_client(params, full_url):
     """
     Core generation logic shared by web form and JSON API.
@@ -374,6 +379,18 @@ def generate_custom_client(params, full_url):
         direction=direction,
         build_profile=build_profile,
     )
+    if (
+        managed_host_agent_enabled(update_channel)
+        and not _settings.RDBK_HOST_REGISTRATION_SECRET
+    ):
+        return {
+            'success': False,
+            'error': (
+                'Windows Helpdesk requires RDBK_HOST_REGISTRATION_SECRET '
+                'to register its managed host agent.'
+            ),
+            'status_code': 503,
+        }
 
     try:
         iconfile = params.get('iconfile')
@@ -553,6 +570,15 @@ def generate_custom_client(params, full_url):
             supportAddressBookUrl if supportAddressBook or quick_support else ''
         ),
         "RDBK_UPDATE_CHANNEL": update_channel,
+        "RDBK_HOST_AGENT": (
+            'true' if managed_host_agent_enabled(update_channel) else 'false'
+        ),
+        "RDBK_HOST_REGISTRATION_SECRET": (
+            _settings.RDBK_HOST_REGISTRATION_SECRET
+            if managed_host_agent_enabled(update_channel)
+            else ''
+        ),
+        "RDBK_WINDOWS_SIGNER_SUBJECT": _settings.RDBK_WINDOWS_SIGNER_SUBJECT,
         "RDBK_BUILD_UUID": myuuid,
         "CLIENT_VARIANT": build_profile,
         "PIT_BASE_VERSION": version if pit_version else '',
