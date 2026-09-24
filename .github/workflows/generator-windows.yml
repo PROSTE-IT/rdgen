@@ -454,12 +454,25 @@ jobs:
           vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
           doNotCache: false
 
+      - name: Capture Windows runner image version
+        id: runner-image
+        shell: pwsh
+        run: |
+          $version = if ([string]::IsNullOrWhiteSpace($env:ImageVersion)) {
+            "unknown"
+          } else {
+            $env:ImageVersion
+          }
+          Write-Host "Windows runner image version: $version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+
       - name: Restore vcpkg binary cache
         uses: actions/cache@v4
         with:
           path: C:\vcpkg-binary-cache
-          key: vcpkg-binary-${{ runner.os }}-${{ matrix.job.vcpkg-triplet }}-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-binary-${{ runner.os }}-${{ matrix.job.vcpkg-triplet }}-${{ env.VCPKG_COMMIT_ID }}-${{ steps.runner-image.outputs.version }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
+            vcpkg-binary-${{ runner.os }}-${{ matrix.job.vcpkg-triplet }}-${{ env.VCPKG_COMMIT_ID }}-${{ steps.runner-image.outputs.version }}-
             vcpkg-binary-${{ runner.os }}-${{ matrix.job.vcpkg-triplet }}-${{ env.VCPKG_COMMIT_ID }}-
 
       - name: Install vcpkg dependencies

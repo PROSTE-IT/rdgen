@@ -45,7 +45,21 @@ jobs:
           repository: rustdesk/rustdesk
           submodules: recursive
 
+      - name: Restore generated bridge cache
+        id: generated-bridge-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./src/bridge_generated.rs
+            ./src/bridge_generated.io.rs
+            ./flutter/lib/generated_bridge.dart
+            ./flutter/lib/generated_bridge.freezed.dart
+            ./flutter/macos/Runner/bridge_generated.h
+            ./flutter/ios/Runner/bridge_generated.h
+          key: generated-bridge-${{ runner.os }}-${{ inputs.version }}-${{ env.FLUTTER_RUST_BRIDGE_VERSION }}-${{ hashFiles('src/**/*.rs', 'Cargo.lock', 'flutter/pubspec.lock') }}
+
       - name: Install prerequisites
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get install ca-certificates -y
           sudo apt-get update -y
@@ -65,6 +79,7 @@ jobs:
             wget
 
       - name: Install Rust toolchain
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ env.RUST_VERSION }}
@@ -72,10 +87,12 @@ jobs:
           components: "rustfmt"
 
       - uses: Swatinem/rust-cache@v2
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         with:
           prefix-key: bridge-${{ matrix.job.os }}
 
       - name: Cache cargo git
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
@@ -85,12 +102,14 @@ jobs:
 
       - name: Cache Bridge
         id: cache-bridge
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: /tmp/flutter_rust_bridge
           key: vcpkg-${{ matrix.job.arch }}
 
       - name: Install flutter
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
@@ -98,6 +117,7 @@ jobs:
           cache: true
 
       - name: Install flutter rust bridge deps
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
@@ -110,6 +130,7 @@ jobs:
             pushd flutter && sed -i -e 's/extended_text: 14.0.0/extended_text: 13.0.0/g' pubspec.yaml && flutter pub get && popd
 
       - name: Run flutter rust bridge
+        if: steps.generated-bridge-cache.outputs.cache-hit != 'true'
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
