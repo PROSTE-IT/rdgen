@@ -32,3 +32,11 @@ agent. Keep it only in deployment secrets; do not commit it. Production should
 also set `RDBK_WINDOWS_SIGNER_SUBJECT` to the expected Authenticode certificate
 subject after Artifact Signing is enabled.
 
+## PROSTE IT Android Helpdesk
+
+RDGen contains a dedicated `android_helpdesk` profile for the single customer
+application distributed through Google Play. It produces a signed AAB plus a
+test APK, forces an incoming-only configuration and deliberately has no RDBK
+address-book integration. Before the first store build, follow
+[`docs/ANDROID_HELPDESK_GOOGLE_PLAY.md`](docs/ANDROID_HELPDESK_GOOGLE_PLAY.md).
+

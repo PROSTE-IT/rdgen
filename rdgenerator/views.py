@@ -28,7 +28,7 @@ from urllib.parse import quote
 
 
 ARTIFACT_SUFFIXES = {
-    '.exe', '.msi', '.apk', '.deb', '.rpm', '.zst', '.appimage', '.flatpak', '.dmg'
+    '.exe', '.msi', '.apk', '.aab', '.deb', '.rpm', '.zst', '.appimage', '.flatpak', '.dmg'
 }
 
 
@@ -194,6 +194,7 @@ def remove_new_version_notification(params):
     return bool(
         params.get('supportAddressBook')
         or params.get('buildProfile') == 'quick_support'
+        or params.get('buildProfile') == 'android_helpdesk'
         or params.get('removeNewVersionNotif', False)
     )
 
@@ -218,6 +219,30 @@ def allocate_pit_version(base_version):
 
     revision = sequence.last_revision
     return f"{base_version}-pit.{revision}", revision
+
+
+def android_play_version_code(base_version, pit_revision):
+    """Encode a PROSTE IT release as a monotonic Google Play versionCode.
+
+    The decimal layout is MMmmpprrrr: two digits each for major, minor and
+    patch followed by four digits for the shared PROSTE IT revision.
+    """
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", str(base_version or ""))
+    if not match or pit_revision is None:
+        raise ValueError("Android Helpdesk requires a numeric base version and revision.")
+    major, minor, patch = (int(value) for value in match.groups())
+    revision = int(pit_revision)
+    if major > 20 or minor > 99 or patch > 99 or not 1 <= revision <= 9999:
+        raise ValueError("Android Helpdesk version components exceed versionCode limits.")
+    version_code = (
+        major * 100_000_000
+        + minor * 1_000_000
+        + patch * 10_000
+        + revision
+    )
+    if version_code > 2_100_000_000:
+        raise ValueError("Android Helpdesk versionCode exceeds the Google Play limit.")
+    return version_code
 
 
 def managed_update_channel(
@@ -256,11 +281,14 @@ def generate_custom_client(params, full_url):
     version = params.get('version', '1.4.9')
     build_profile = params.get('buildProfile') or 'standard'
     quick_support = build_profile == 'quick_support'
+    android_helpdesk = build_profile == 'android_helpdesk'
     delayFix = params.get('delayFix', True)
     xOffline = params.get('xOffline', False)
-    hidecm = params.get('hidecm', False)
+    hidecm = False if android_helpdesk else params.get('hidecm', False)
     supportAddressBook = bool(
-        params.get('supportAddressBook', False) and not quick_support
+        params.get('supportAddressBook', False)
+        and not quick_support
+        and not android_helpdesk
     )
     removeNewVersionNotif = remove_new_version_notification(params)
     supportAddressBookUrl = (
@@ -271,6 +299,40 @@ def generate_custom_client(params, full_url):
             'success': False,
             'error': 'Quick Support builds require Windows 64Bit and RustDesk 1.4.9.',
             'status_code': 400,
+        }
+    if android_helpdesk and (platform != 'android' or version != '1.4.9'):
+        return {
+            'success': False,
+            'error': 'Android Helpdesk builds require Android and RustDesk 1.4.9.',
+            'status_code': 400,
+        }
+    if android_helpdesk and not re.fullmatch(
+        r'[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+',
+        _settings.ANDROID_HELPDESK_APP_ID,
+    ):
+        return {
+            'success': False,
+            'error': 'ANDROID_HELPDESK_APP_ID is not a valid Android package name.',
+            'status_code': 503,
+        }
+    if android_helpdesk and (
+        not _settings.ANDROID_HELPDESK_APP_NAME
+        or not _settings.ANDROID_HELPDESK_APP_NAME.isascii()
+        or re.search(r'[&\\|\'"$`\r\n]', _settings.ANDROID_HELPDESK_APP_NAME)
+    ):
+        return {
+            'success': False,
+            'error': 'ANDROID_HELPDESK_APP_NAME contains unsupported characters.',
+            'status_code': 503,
+        }
+    if android_helpdesk and not re.fullmatch(
+        r'[A-Za-z0-9][A-Za-z0-9_-]*',
+        _settings.ANDROID_HELPDESK_ARTIFACT_BASENAME,
+    ):
+        return {
+            'success': False,
+            'error': 'ANDROID_HELPDESK_ARTIFACT_BASENAME is not a safe file name.',
+            'status_code': 503,
         }
     if supportAddressBook and (platform != 'windows' or version != '1.4.9'):
         return {
@@ -302,7 +364,11 @@ def generate_custom_client(params, full_url):
         urlLink = "https://rustdesk.com"
     if not downloadLink:
         downloadLink = "https://rustdesk.com/download"
-    direction = 'incoming' if quick_support else params.get('direction', 'both')
+    direction = (
+        'incoming'
+        if quick_support or android_helpdesk
+        else params.get('direction', 'both')
+    )
     installation = (
         'installationY'
         if quick_support
@@ -314,6 +380,8 @@ def generate_custom_client(params, full_url):
         else params.get('settings', 'settingsY')
     )
     appname = params.get('appname', '')
+    if android_helpdesk:
+        appname = _settings.ANDROID_HELPDESK_APP_NAME
     if not appname:
         appname = "proste IT Quick Support" if quick_support else "rustdesk"
     filename = params.get('exename', 'rustdesk')
@@ -321,13 +389,23 @@ def generate_custom_client(params, full_url):
     if not compname:
         compname = "Purslane Ltd"
     androidappid = params.get('androidappid', '')
+    if android_helpdesk:
+        androidappid = _settings.ANDROID_HELPDESK_APP_ID
     if not androidappid:
         androidappid = "com.carriez.flutter_hbb"
     compname = compname.replace("&","\\&")
-    permPass = '' if quick_support else params.get('permanentPassword', '')
+    permPass = (
+        ''
+        if quick_support or android_helpdesk
+        else params.get('permanentPassword', '')
+    )
     theme = params.get('theme', 'system')
     themeDorO = params.get('themeDorO', 'default')
-    passApproveMode = params.get('passApproveMode', 'password-click')
+    passApproveMode = (
+        'click'
+        if android_helpdesk
+        else params.get('passApproveMode', 'password-click')
+    )
     if supportAddressBook and direction == 'incoming':
         if not str(permPass or '').strip():
             return {
@@ -369,10 +447,24 @@ def generate_custom_client(params, full_url):
         filename = "rustdesk"
     if quick_support and not re.search(r'(?:-qs|_qs)$', filename, re.IGNORECASE):
         filename = f"{filename}-qs"
+    if android_helpdesk:
+        filename = _settings.ANDROID_HELPDESK_ARTIFACT_BASENAME
     if not all(char.isascii() for char in appname):
         appname = "rustdesk"
     myuuid = str(uuid.uuid4())
     pit_version, pit_revision = allocate_pit_version(version)
+    try:
+        android_version_code = (
+            android_play_version_code(version, pit_revision)
+            if android_helpdesk
+            else ''
+        )
+    except ValueError as exc:
+        return {
+            'success': False,
+            'error': str(exc),
+            'status_code': 400,
+        }
     update_channel = managed_update_channel(
         enabled=supportAddressBook or quick_support,
         platform=platform,
@@ -584,6 +676,7 @@ def generate_custom_client(params, full_url):
         "PIT_BASE_VERSION": version if pit_version else '',
         "PIT_VERSION": pit_version,
         "PIT_REVISION": str(pit_revision) if pit_revision is not None else '',
+        "ANDROID_VERSION_CODE": str(android_version_code),
         "compname": compname,
         "androidappid":androidappid,
         "filename":filename
@@ -610,12 +703,16 @@ def generate_custom_client(params, full_url):
 
     zip_url = json.dumps(zipJson)
 
+    workflow_inputs = {
+        "version": version,
+        "zip_url": zip_url,
+    }
+    if platform == 'android':
+        workflow_inputs["profile"] = build_profile
+
     data = {
         "ref":_settings.GHBRANCH,
-        "inputs":{
-            "version":version,
-            "zip_url":zip_url
-        },
+        "inputs": workflow_inputs,
         "return_run_details": True
     } 
     headers = {
@@ -796,6 +893,11 @@ def generator_view(request):
     return render(request, 'generator.html', {
         'form': form,
         'download_center_url': _settings.RDBK_DOWNLOAD_CENTER_URL,
+        'android_helpdesk_app_id': _settings.ANDROID_HELPDESK_APP_ID,
+        'android_helpdesk_app_name': _settings.ANDROID_HELPDESK_APP_NAME,
+        'android_helpdesk_artifact_basename': (
+            _settings.ANDROID_HELPDESK_ARTIFACT_BASENAME
+        ),
     })
 
 

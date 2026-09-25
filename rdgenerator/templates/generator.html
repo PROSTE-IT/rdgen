@@ -324,6 +324,12 @@
                         zawiera stałego hasła ani książki technika RDBK. Hasło dostępu
                         nienadzorowanego musi być zapisane w bieżącym pakiecie Windows Helpdesk.
                     </p><br>
+                    <p id="androidHelpdeskProfileNote" class="rdgen-profile-note" hidden>
+                        Android Helpdesk tworzy jedną aplikację klientów przeznaczoną do
+                        Google Play. Profil wymusza połączenia przychodzące, stały identyfikator
+                        pakietu, brak integracji RDBK i aktualizacje wyłącznie przez Google Play.
+                        Wynikiem jest podpisany AAB oraz dodatkowy APK do testów lokalnych.
+                    </p>
                     <label for="{{ form.supportAddressBook.id_for_label }}">{{ form.supportAddressBook }} Włącz integrację z backendem PROSTE IT RDBK</label><br>
                     <label for="{{ form.supportAddressBookUrl.id_for_label }}">Adres URL API backendu RDBK:</label>
                     {{ form.supportAddressBookUrl }}
@@ -334,7 +340,7 @@
                     {{ form.installation }}<br><br>
                     <label for="{{ form.settings.id_for_label }}">Wyłączyć panel ustawień?</label>
                     {{ form.settings }}<br><br>
-                    <label for="{{ form.androidappid.id_for_label }}">Niestandardowy identyfikator aplikacji Android (zastępuje „com.carriez.flutter_hbb”; pozostaw puste, aby użyć domyślnego):</label>
+                    <label for="{{ form.androidappid.id_for_label }}">Niestandardowy identyfikator aplikacji Android (profil Android Helpdesk wymusza „{{ android_helpdesk_app_id }}”):</label>
                     {{ form.androidappid }}<br><br>
             </div>
 
@@ -519,6 +525,7 @@
                 document.querySelectorAll('.platform-icon').forEach(i => i.classList.remove('active'));
                 this.classList.add('active');
                 document.getElementById('id_platform').value = this.dataset.platform;
+                applyBuildProfile();
             });
         });
         document.getElementById("{{ form.iconfile.id_for_label }}").addEventListener('change', function(event) {
@@ -543,14 +550,39 @@
         });
         const buildProfile = document.getElementById("{{ form.buildProfile.id_for_label }}");
         const quickSupportProfileNote = document.getElementById('quickSupportProfileNote');
+        const androidHelpdeskProfileNote = document.getElementById('androidHelpdeskProfileNote');
         const helpdeskPasswordNote = document.getElementById('helpdeskPasswordNote');
         const supportAddressBook = document.getElementById("{{ form.supportAddressBook.id_for_label }}");
 
         function applyBuildProfile() {
             const quickSupport = buildProfile.value === 'quick_support';
+            const androidHelpdesk = buildProfile.value === 'android_helpdesk';
             const incoming = document.querySelector('input[name="direction"]:checked')?.value === 'incoming';
             quickSupportProfileNote.hidden = !quickSupport;
-            helpdeskPasswordNote.hidden = quickSupport || !supportAddressBook.checked || !incoming;
+            androidHelpdeskProfileNote.hidden = !androidHelpdesk;
+            helpdeskPasswordNote.hidden = quickSupport || androidHelpdesk || !supportAddressBook.checked || !incoming;
+
+            if (androidHelpdesk) {
+                document.getElementById('id_platform').value = 'android';
+                document.querySelectorAll('.platform-icon').forEach(icon => {
+                    icon.classList.toggle('active', icon.dataset.platform === 'android');
+                });
+                document.getElementById("{{ form.version.id_for_label }}").value = '1.4.9';
+                document.querySelectorAll('input[name="direction"]').forEach(input => {
+                    input.checked = input.value === 'incoming';
+                });
+                supportAddressBook.checked = false;
+                document.getElementById("{{ form.removeNewVersionNotif.id_for_label }}").checked = true;
+                document.getElementById("{{ form.permanentPassword.id_for_label }}").value = '';
+                document.getElementById("{{ form.passApproveMode.id_for_label }}").value = 'click';
+                document.getElementById("{{ form.hidecm.id_for_label }}").checked = false;
+                document.getElementById('passwordRequirement').style.display = 'none';
+                document.getElementById("{{ form.appname.id_for_label }}").value = '{{ android_helpdesk_app_name|escapejs }}';
+                document.getElementById("{{ form.exename.id_for_label }}").value = '{{ android_helpdesk_artifact_basename|escapejs }}';
+                document.getElementById("{{ form.androidappid.id_for_label }}").value = '{{ android_helpdesk_app_id|escapejs }}';
+                return;
+            }
+
             if (!quickSupport) {
                 return;
             }
@@ -723,6 +755,9 @@
         const RDGEN_CONFIG_SCHEMA_VERSION = 2;
 
         function selectedManagedProfile() {
+            if (buildProfile.value === 'android_helpdesk') {
+                return 'android_helpdesk';
+            }
             if (buildProfile.value === 'quick_support') {
                 return 'quick_support';
             }

@@ -8,6 +8,7 @@ import uuid
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pyzipper
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 
@@ -18,6 +19,8 @@ from .settings_catalog import ADVANCED_SETTINGS, apply_advanced_settings
 from .views import (
     _get_run_status,
     allocate_pit_version,
+    android_play_version_code,
+    generate_custom_client,
     managed_host_agent_enabled,
     managed_update_channel,
     remove_new_version_notification,
@@ -187,6 +190,60 @@ class SupportAddressBookValidationTests(SimpleTestCase):
             'removeNewVersionNotif': False,
         }))
 
+    def test_android_helpdesk_form_enforces_store_profile(self):
+        form = GenerateForm(data=self.form_data(
+            buildProfile='android_helpdesk',
+            platform='android',
+            direction='outgoing',
+            supportAddressBook=True,
+            permanentPassword='must-not-be-embedded',
+            passApproveMode='password',
+            androidappid='com.example.customer',
+            appname='Customer-specific app',
+        ))
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['direction'], 'incoming')
+        self.assertFalse(form.cleaned_data['supportAddressBook'])
+        self.assertTrue(form.cleaned_data['removeNewVersionNotif'])
+        self.assertEqual(form.cleaned_data['androidappid'], 'pl.prosteit.helpdesk')
+        self.assertEqual(form.cleaned_data['appname'], 'proste IT Helpdesk')
+        self.assertEqual(form.cleaned_data['permanentPassword'], '')
+        self.assertEqual(form.cleaned_data['passApproveMode'], 'click')
+
+    def test_android_helpdesk_api_enforces_store_profile(self):
+        cleaned, errors = validate_generate_params(self.form_data(
+            buildProfile='android_helpdesk',
+            platform='android',
+            direction='both',
+            supportAddressBook=True,
+            permanentPassword='must-not-be-embedded',
+            androidappid='com.example.customer',
+        ))
+
+        self.assertFalse(errors)
+        self.assertEqual(cleaned['direction'], 'incoming')
+        self.assertFalse(cleaned['supportAddressBook'])
+        self.assertEqual(cleaned['androidappid'], 'pl.prosteit.helpdesk')
+        self.assertEqual(cleaned['permanentPassword'], '')
+
+    def test_android_helpdesk_rejects_wrong_platform_or_version(self):
+        form = GenerateForm(data=self.form_data(
+            buildProfile='android_helpdesk',
+            platform='windows',
+            version='1.4.8',
+        ))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('platform', form.errors)
+        self.assertIn('version', form.errors)
+
+    def test_android_helpdesk_always_removes_upstream_update_notification(self):
+        self.assertTrue(remove_new_version_notification({
+            'buildProfile': 'android_helpdesk',
+            'removeNewVersionNotif': False,
+        }))
+
     def test_regular_build_keeps_explicit_update_notification_setting(self):
         self.assertFalse(remove_new_version_notification({
             'supportAddressBook': False,
@@ -326,6 +383,14 @@ class GeneratorConfigurationPageTests(SimpleTestCase):
         self.assertContains(response, 'disable-audio')
         self.assertContains(response, 'Pokazuj zdalny kursor')
 
+    def test_generator_exposes_android_helpdesk_store_profile(self):
+        response = self.client.get('/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="android_helpdesk"')
+        self.assertContains(response, 'id="androidHelpdeskProfileNote"')
+        self.assertContains(response, 'pl.prosteit.helpdesk')
+
 
 class AdvancedSettingsCatalogTests(SimpleTestCase):
     def test_catalog_covers_documented_settings_and_is_added_to_form(self):
@@ -412,6 +477,81 @@ class BuildVersionSequenceTests(TestCase):
 
     def test_master_does_not_allocate_a_product_version(self):
         self.assertEqual(allocate_pit_version('master'), ('', None))
+
+    def test_android_version_code_encodes_base_version_and_revision(self):
+        self.assertEqual(android_play_version_code('1.4.9', 12), 104090012)
+
+    def test_android_version_code_rejects_invalid_or_overflowing_values(self):
+        with self.assertRaises(ValueError):
+            android_play_version_code('master', 1)
+        with self.assertRaises(ValueError):
+            android_play_version_code('1.4.9', 10_000)
+
+
+@override_settings(
+    GHUSER='PROSTE-IT',
+    REPONAME='rdgen',
+    GHBRANCH='feature/support-address-book-build',
+    GHBEARER='test-token',
+    GENURL='https://rdgen.example.test',
+    ZIP_PASSWORD='test-zip-password',
+    ANDROID_HELPDESK_APP_ID='pl.prosteit.helpdesk',
+    ANDROID_HELPDESK_APP_NAME='proste IT Helpdesk',
+    ANDROID_HELPDESK_ARTIFACT_BASENAME='proste-it-helpdesk-android',
+)
+class AndroidHelpdeskGenerationTests(TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.previous_cwd = os.getcwd()
+        os.chdir(self.temp_dir.name)
+
+    def tearDown(self):
+        os.chdir(self.previous_cwd)
+        self.temp_dir.cleanup()
+
+    @patch('rdgenerator.views.requests.post')
+    def test_generation_dispatches_store_profile_and_seals_identity(self, post):
+        response = Mock(status_code=204)
+        response.json.return_value = {
+            'workflow_run_id': 1234,
+            'html_url': 'https://github.example.test/run/1234',
+        }
+        post.return_value = response
+
+        result = generate_custom_client({
+            'platform': 'android',
+            'version': '1.4.9',
+            'buildProfile': 'android_helpdesk',
+            'exename': 'customer-specific-name',
+            'appname': 'Customer-specific app',
+            'androidappid': 'com.example.customer',
+            'direction': 'outgoing',
+            'supportAddressBook': True,
+            'permanentPassword': 'must-not-be-embedded',
+        }, 'https://rdgen.example.test')
+
+        self.assertTrue(result['success'])
+        self.assertEqual(result['filename'], 'proste-it-helpdesk-android')
+        self.assertEqual(result['build_profile'], 'android_helpdesk')
+        self.assertEqual(result['update_channel'], '')
+
+        dispatch = post.call_args.kwargs['json']
+        self.assertEqual(dispatch['inputs']['profile'], 'android_helpdesk')
+        self.assertEqual(dispatch['inputs']['version'], '1.4.9')
+
+        archive = next(Path('temp_zips').glob('secrets_*.zip'))
+        with pyzipper.AESZipFile(archive) as encrypted:
+            encrypted.setpassword(b'test-zip-password')
+            config = json.loads(encrypted.read('secrets.json'))
+
+        self.assertEqual(config['CLIENT_VARIANT'], 'android_helpdesk')
+        self.assertEqual(config['androidappid'], 'pl.prosteit.helpdesk')
+        self.assertEqual(config['appname'], 'proste IT Helpdesk')
+        self.assertEqual(config['filename'], 'proste-it-helpdesk-android')
+        self.assertEqual(config['PIT_VERSION'], '1.4.9-pit.1')
+        self.assertEqual(config['ANDROID_VERSION_CODE'], '104090001')
+        self.assertEqual(config['RDBK_API_URL'], '')
+        self.assertEqual(config['RDBK_UPDATE_CHANNEL'], '')
 
 
 @override_settings(
@@ -696,6 +836,25 @@ class BuildArtifactAPITests(TestCase):
         self.assertEqual(
             (self.build_dir / 'batch-build.msi').read_bytes(),
             b'MSI batch',
+        )
+
+    def test_artifact_upload_accepts_android_app_bundle(self):
+        response = self.client.post(
+            '/save_custom_client',
+            {
+                'uuid': self.build_uuid,
+                'file': SimpleUploadedFile(
+                    'proste-it-helpdesk-android.aab',
+                    b'Android App Bundle',
+                ),
+            },
+            HTTP_AUTHORIZATION='Bearer upload-test-token',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            (self.build_dir / 'proste-it-helpdesk-android.aab').read_bytes(),
+            b'Android App Bundle',
         )
 
     def test_artifact_upload_validates_entire_batch_before_writing(self):

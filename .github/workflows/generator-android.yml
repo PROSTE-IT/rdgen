@@ -13,6 +13,11 @@ on:
         required: true
         default: ''
         type: string
+      profile:
+        description: 'RDGen build profile'
+        required: false
+        default: 'standard'
+        type: string
 
 
 env:
@@ -538,6 +543,51 @@ jobs:
           convert ./res/128x128.png -resize 200% ./flutter/assets/128x128@2x.png || true
           cp ./flutter/assets/icon.svg ./res/scalable.svg
 
+      - name: Prepare Android Helpdesk for API 36
+        if: inputs.profile == 'android_helpdesk' && matrix.job.arch == 'aarch64'
+        shell: bash
+        run: |
+          grep -Fq "applicationId \"${androidappid}\"" ./flutter/android/app/build.gradle
+          grep -Fq "FFI.startServer(configPath, \"${custom}\")" \
+            ./flutter/android/app/src/main/kotlin/com/carriez/flutter_hbb/MainService.kt
+          grep -Fq "customClientConfig: '${custom}'" ./flutter/lib/models/native_model.dart
+          grep -Fq "${appname}" ./flutter/android/app/src/main/res/values/strings.xml
+          GRADLE_FILE=./flutter/android/app/build.gradle
+          SETTINGS_FILE=./flutter/android/settings.gradle
+          WRAPPER_FILE=./flutter/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i -E 's/compileSdkVersion [0-9]+/compileSdkVersion 36/' "$GRADLE_FILE"
+          sed -i -E 's/targetSdkVersion [0-9]+/targetSdkVersion 36/' "$GRADLE_FILE"
+          if ! grep -q 'namespace "com.carriez.flutter_hbb"' "$GRADLE_FILE"; then
+            sed -i '/^android {/a\    namespace "com.carriez.flutter_hbb"' "$GRADLE_FILE"
+          fi
+          sed -i -E 's/id "com.android.application" version "[^"]+"/id "com.android.application" version "8.9.1"/' "$SETTINGS_FILE"
+          sed -i -E 's#gradle-[0-9.]+-all.zip#gradle-8.11.1-all.zip#' "$WRAPPER_FILE"
+          grep -nE 'namespace|compileSdkVersion|targetSdkVersion' "$GRADLE_FILE"
+          grep -n 'com.android.application' "$SETTINGS_FILE"
+          grep -n 'distributionUrl' "$WRAPPER_FILE"
+
+      - name: Export Android Helpdesk source customizations
+        if: inputs.profile == 'android_helpdesk' && matrix.job.arch == 'aarch64'
+        shell: bash
+        run: |
+          git diff --binary -- . \
+            ':(exclude)src/bridge_generated.rs' \
+            ':(exclude)src/bridge_generated.io.rs' \
+            ':(exclude)flutter/lib/generated_bridge.dart' \
+            ':(exclude)flutter/lib/generated_bridge.freezed.dart' \
+            ':(exclude)flutter/macos/Runner/bridge_generated.h' \
+            ':(exclude)flutter/ios/Runner/bridge_generated.h' \
+            > "$RUNNER_TEMP/android-helpdesk-customizations.patch"
+          test -s "$RUNNER_TEMP/android-helpdesk-customizations.patch"
+
+      - name: Upload Android Helpdesk source customizations
+        if: inputs.profile == 'android_helpdesk' && matrix.job.arch == 'aarch64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-helpdesk-customizations
+          path: ${{ runner.temp }}/android-helpdesk-customizations.patch
+          retention-days: 1
+
       - name: Build rustdesk
         shell: bash
         env:
@@ -634,7 +684,7 @@ jobs:
           ls -l ./signed-apk/
 
       - name: send file to rdgen server
-        if: ${{ env.rdgen == 'true' }}
+        if: ${{ env.rdgen == 'true' && inputs.profile != 'android_helpdesk' }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
@@ -645,7 +695,7 @@ jobs:
             curl --fail-with-body -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ secrets.RDGEN_UPLOAD_TOKEN }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
 
       - name: send file to api server
-        if: ${{ env.rdgen == 'false' }}
+        if: ${{ env.rdgen == 'false' && inputs.profile != 'android_helpdesk' }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
@@ -654,6 +704,228 @@ jobs:
           shell: bash
           command: |
             curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" ${{ env.apiServer }}/api/save_custom_client
+
+  package-android-helpdesk:
+    if: inputs.profile == 'android_helpdesk'
+    needs: [build-rustdesk-android, setup, generate-bridge-linux]
+    runs-on: ubuntu-24.04
+    name: package Android Helpdesk AAB
+    steps:
+      - name: Checkout RDGen workflow helpers
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: encrypted-secrets-zip
+
+      - name: Load build configuration
+        uses: ./.github/actions/decrypt-secrets
+        with:
+          zip_password: ${{ secrets.ZIP_PASSWORD }}
+
+      - name: Checkout RustDesk source
+        if: ${{ inputs.version != 'master' }}
+        uses: actions/checkout@v4
+        with:
+          repository: rustdesk/rustdesk
+          ref: refs/tags/${{ inputs.version }}
+          submodules: recursive
+
+      - name: Checkout RustDesk development source
+        if: ${{ inputs.version == 'master' }}
+        uses: actions/checkout@v4
+        with:
+          repository: rustdesk/rustdesk
+          submodules: recursive
+
+      - name: Restore generated Flutter bridge
+        uses: actions/download-artifact@v4
+        with:
+          name: bridge-artifact
+          path: ./
+
+      - name: Download Android Helpdesk source customizations
+        uses: actions/download-artifact@v4
+        with:
+          name: android-helpdesk-customizations
+          path: ${{ runner.temp }}/android-helpdesk-customizations
+
+      - name: Apply Android Helpdesk source customizations
+        shell: bash
+        run: |
+          git apply "$RUNNER_TEMP/android-helpdesk-customizations/android-helpdesk-customizations.patch"
+          grep -nE 'namespace|compileSdkVersion|targetSdkVersion' ./flutter/android/app/build.gradle
+          grep -n 'com.android.application' ./flutter/android/settings.gradle
+
+      - name: Install Java and Android packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk-headless unzip
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.ANDROID_FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: rustfmt
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          yes | sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: nttld/setup-ndk@v1
+        id: setup-play-ndk
+        with:
+          ndk-version: ${{ env.NDK_VERSION }}
+          add-to-path: true
+
+      - name: Download arm64 RustDesk library
+        uses: actions/download-artifact@v4
+        with:
+          name: librustdesk.so.aarch64-linux-android
+          path: ${{ runner.temp }}/rustdesk-libs/arm64-v8a
+
+      - name: Download armv7 RustDesk library
+        uses: actions/download-artifact@v4
+        with:
+          name: librustdesk.so.armv7-linux-androideabi
+          path: ${{ runner.temp }}/rustdesk-libs/armeabi-v7a
+
+      - name: Download x86_64 RustDesk library
+        uses: actions/download-artifact@v4
+        with:
+          name: librustdesk.so.x86_64-linux-android
+          path: ${{ runner.temp }}/rustdesk-libs/x86_64
+
+      - name: Assemble native libraries
+        shell: bash
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-play-ndk.outputs.ndk-path }}
+        run: |
+          mkdir -p \
+            ./flutter/android/app/src/main/jniLibs/arm64-v8a \
+            ./flutter/android/app/src/main/jniLibs/armeabi-v7a \
+            ./flutter/android/app/src/main/jniLibs/x86_64
+          cp "$RUNNER_TEMP/rustdesk-libs/arm64-v8a/liblibrustdesk.so" \
+            ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
+          cp "$RUNNER_TEMP/rustdesk-libs/armeabi-v7a/liblibrustdesk.so" \
+            ./flutter/android/app/src/main/jniLibs/armeabi-v7a/librustdesk.so
+          cp "$RUNNER_TEMP/rustdesk-libs/x86_64/liblibrustdesk.so" \
+            ./flutter/android/app/src/main/jniLibs/x86_64/librustdesk.so
+          cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" \
+            ./flutter/android/app/src/main/jniLibs/arm64-v8a/
+          cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so" \
+            ./flutter/android/app/src/main/jniLibs/armeabi-v7a/
+          cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so" \
+            ./flutter/android/app/src/main/jniLibs/x86_64/
+
+      - name: Configure Google Play upload signing
+        shell: bash
+        env:
+          UPLOAD_KEY_BASE64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_ALIAS }}
+          UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$UPLOAD_KEY_BASE64" ] || [ -z "$UPLOAD_KEY_ALIAS" ] || \
+             [ -z "$UPLOAD_STORE_PASSWORD" ] || [ -z "$UPLOAD_KEY_PASSWORD" ]; then
+            echo "Android Helpdesk requires all ANDROID_* upload signing secrets." >&2
+            exit 1
+          fi
+          printf '%s' "$UPLOAD_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/android-upload.jks"
+          {
+            printf 'storePassword=%s\n' "$UPLOAD_STORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$UPLOAD_KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$UPLOAD_KEY_ALIAS"
+            printf 'storeFile=%s\n' "$RUNNER_TEMP/android-upload.jks"
+          } > ./flutter/android/key.properties
+
+      - name: Build signed AAB and test APK
+        shell: bash
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+        run: |
+          if ! [[ "$ANDROID_VERSION_CODE" =~ ^[0-9]+$ ]]; then
+            echo "Missing numeric ANDROID_VERSION_CODE." >&2
+            exit 1
+          fi
+          if [ -z "$PIT_VERSION" ]; then
+            echo "Missing PIT_VERSION." >&2
+            exit 1
+          fi
+          sed -i 's/org.gradle.jvmargs=-Xmx1024M/org.gradle.jvmargs=-Xmx4g/' ./flutter/android/gradle.properties
+          pushd flutter
+          flutter pub get
+          flutter build appbundle --release \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --build-name "$PIT_VERSION" \
+            --build-number "$ANDROID_VERSION_CODE"
+          flutter build apk --release \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --build-name "$PIT_VERSION" \
+            --build-number "$ANDROID_VERSION_CODE"
+          popd
+          mkdir -p ./android-helpdesk-release
+          cp ./flutter/build/app/outputs/bundle/release/app-release.aab \
+            "./android-helpdesk-release/${filename}-${PIT_VERSION}.aab"
+          cp ./flutter/build/app/outputs/flutter-apk/app-release.apk \
+            "./android-helpdesk-release/${filename}-${PIT_VERSION}.apk"
+
+      - name: Verify Android Helpdesk artifacts
+        shell: bash
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+        run: |
+          AAB="./android-helpdesk-release/${filename}-${PIT_VERSION}.aab"
+          APK="./android-helpdesk-release/${filename}-${PIT_VERSION}.apk"
+          jarsigner -verify "$AAB" | grep -q 'jar verified'
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
+          BADGING=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK")
+          printf '%s\n' "$BADGING" | grep -F "package: name='${androidappid}'"
+          printf '%s\n' "$BADGING" | grep -F "versionCode='${ANDROID_VERSION_CODE}'"
+          printf '%s\n' "$BADGING" | grep -F "versionName='${PIT_VERSION}'"
+          printf '%s\n' "$BADGING" | grep -F "targetSdkVersion:'36'"
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            unzip -l "$AAB" | grep -q "lib/$abi/librustdesk.so"
+          done
+
+      - name: Upload Android Helpdesk release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-helpdesk-release
+          path: ./android-helpdesk-release/*
+          if-no-files-found: error
+
+      - name: Send Android Helpdesk release to RDGen
+        if: ${{ env.rdgen == 'true' }}
+        shell: bash
+        run: |
+          curl --fail-with-body -X POST \
+            -H "Authorization: Bearer ${{ secrets.RDGEN_UPLOAD_TOKEN }}" \
+            -F "file=@./android-helpdesk-release/${filename}-${PIT_VERSION}.aab" \
+            -F "file=@./android-helpdesk-release/${filename}-${PIT_VERSION}.apk" \
+            -F "uuid=${uuid}" \
+            "${{ secrets.GENURL }}/save_custom_client"
+
+      - name: Send Android Helpdesk release to API server
+        if: ${{ env.rdgen == 'false' }}
+        shell: bash
+        run: |
+          curl --fail-with-body -X POST \
+            -H "Authorization: Bearer ${token}" \
+            -F "file=@./android-helpdesk-release/${filename}-${PIT_VERSION}.aab" \
+            -F "file=@./android-helpdesk-release/${filename}-${PIT_VERSION}.apk" \
+            "${apiServer}/api/save_custom_client"
 
   deploy:
     needs: [build-rustdesk-android]
@@ -697,7 +969,7 @@ jobs:
             name: ${{ env.filename }}-*.deb
 
   cleanup:
-    needs: [build-rustdesk-android, deploy]
+    needs: [build-rustdesk-android, package-android-helpdesk, deploy]
     runs-on: ubuntu-latest
     continue-on-error: true
     if: always()

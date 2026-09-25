@@ -26,6 +26,10 @@ services:
       RDBK_HOST_REGISTRATION_SECRET: "${RDBK_HOST_REGISTRATION_SECRET}"
       RDBK_WINDOWS_SIGNER_SUBJECT: "${RDBK_WINDOWS_SIGNER_SUBJECT}"
       RDBK_DOWNLOAD_CENTER_URL: "https://rdbk-admin.prosteit.pl/admin/downloads/"
+      # These values become permanent after the first Google Play publication.
+      ANDROID_HELPDESK_APP_ID: "${ANDROID_HELPDESK_APP_ID:-pl.prosteit.helpdesk}"
+      ANDROID_HELPDESK_APP_NAME: "${ANDROID_HELPDESK_APP_NAME:-proste IT Helpdesk}"
+      ANDROID_HELPDESK_ARTIFACT_BASENAME: "${ANDROID_HELPDESK_ARTIFACT_BASENAME:-proste-it-helpdesk-android}"
     ports:
       - "8000:8000"
     dns:

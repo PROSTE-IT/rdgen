@@ -29,7 +29,7 @@ THEME_DORO_CHOICES = ['default', 'override']
 PASS_APPROVE_MODE_CHOICES = ['password', 'click', 'password-click']
 PERMISSIONS_DORO_CHOICES = ['default', 'override']
 PERMISSIONS_TYPE_CHOICES = ['custom', 'full', 'view']
-BUILD_PROFILE_CHOICES = ['standard', 'quick_support']
+BUILD_PROFILE_CHOICES = ['standard', 'quick_support', 'android_helpdesk']
 
 # Boolean fields
 BOOL_FIELDS = [
@@ -154,6 +154,22 @@ def validate_generate_params(data):
             'supportAddressBook': False,
             'removeNewVersionNotif': True,
             'permanentPassword': '',
+            'hidecm': False,
+        })
+
+    if cleaned.get('buildProfile') == 'android_helpdesk':
+        if cleaned.get('platform') != 'android':
+            errors['platform'] = 'Profil Android Helpdesk wymaga platformy Android.'
+        if cleaned.get('version') != '1.4.9':
+            errors['version'] = 'Profil Android Helpdesk wymaga RustDesk 1.4.9.'
+        cleaned.update({
+            'direction': 'incoming',
+            'supportAddressBook': False,
+            'removeNewVersionNotif': True,
+            'androidappid': _settings.ANDROID_HELPDESK_APP_ID,
+            'appname': _settings.ANDROID_HELPDESK_APP_NAME,
+            'permanentPassword': '',
+            'passApproveMode': 'click',
             'hidecm': False,
         })
 

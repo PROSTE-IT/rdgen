@@ -43,6 +43,18 @@ RDBK_DOWNLOAD_CENTER_URL = os.environ.get(
     'RDBK_DOWNLOAD_CENTER_URL',
     'https://rdbk-admin.prosteit.pl/admin/downloads/',
 )
+ANDROID_HELPDESK_APP_ID = os.environ.get(
+    'ANDROID_HELPDESK_APP_ID',
+    'pl.prosteit.helpdesk',
+).strip()
+ANDROID_HELPDESK_APP_NAME = os.environ.get(
+    'ANDROID_HELPDESK_APP_NAME',
+    'proste IT Helpdesk',
+).strip()
+ANDROID_HELPDESK_ARTIFACT_BASENAME = os.environ.get(
+    'ANDROID_HELPDESK_ARTIFACT_BASENAME',
+    'proste-it-helpdesk-android',
+).strip()
 
 
 def _env_bool(name, default=False):

@@ -1,6 +1,7 @@
 import re
 
 from django import forms
+from django.conf import settings
 from PIL import Image
 
 from .settings_catalog import ADVANCED_SETTING_GROUPS, ADVANCED_SETTINGS
@@ -25,6 +26,10 @@ class GenerateForm(forms.Form):
         label="Profil aplikacji",
         choices=[
             ('standard', 'Aplikacja standardowa'),
+            (
+                'android_helpdesk',
+                'Android Helpdesk (Google Play, tylko połączenia przychodzące)',
+            ),
             (
                 'quick_support',
                 'Quick Support (przenośna lub instalowalna, tylko połączenia przychodzące)',
@@ -182,6 +187,27 @@ class GenerateForm(forms.Form):
                 'supportAddressBook': False,
                 'removeNewVersionNotif': True,
                 'permanentPassword': '',
+                'hidecm': False,
+            })
+        elif build_profile == 'android_helpdesk':
+            if cleaned_data.get('platform') != 'android':
+                self.add_error(
+                    'platform',
+                    'Profil Android Helpdesk wymaga platformy Android.',
+                )
+            if cleaned_data.get('version') != '1.4.9':
+                self.add_error(
+                    'version',
+                    'Profil Android Helpdesk wymaga obecnie RustDesk 1.4.9.',
+                )
+            cleaned_data.update({
+                'direction': 'incoming',
+                'supportAddressBook': False,
+                'removeNewVersionNotif': True,
+                'androidappid': settings.ANDROID_HELPDESK_APP_ID,
+                'appname': settings.ANDROID_HELPDESK_APP_NAME,
+                'permanentPassword': '',
+                'passApproveMode': 'click',
                 'hidecm': False,
             })
         if cleaned_data.get('supportAddressBook'):
